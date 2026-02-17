@@ -5,6 +5,7 @@ include 'connectdb.php';
 if(!isset($_SESSION['user_id'])){
     if(isset($_GET['ajax'])){ echo json_encode(['status' => 'error']); exit(); }
     header("Location: login.php"); exit();
+    
 }
 
 $user_id = $_SESSION['user_id'];
