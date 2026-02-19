@@ -11,7 +11,7 @@ $order_id = intval($_GET['id']);
 $user_id = $_SESSION['user_id'];
 $show_modal = "";
 
-// --- [ฟังก์ชัน]: อัปเดตสลิปเงินโอน (แทรกเพิ่ม) ---
+// --- [ฟังก์ชัน]: อัปเดตสลิปเงินโอน ---
 if (isset($_POST['update_slip']) && isset($_FILES['slip_image'])) {
     $file = $_FILES['slip_image'];
     if ($file['error'] === 0) {
@@ -54,7 +54,8 @@ $order_q = $conn->query("SELECT * FROM orders WHERE id = $order_id AND user_id =
 $order = $order_q->fetch_assoc();
 if (!$order) { die("ไม่พบข้อมูลออเดอร์"); }
 
-$items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products p ON od.product_id = p.id WHERE od.order_id = $order_id");
+// [ปรับ]: เพิ่มการ JOIN ตาราง products เพื่อดึงภาพสินค้า (image) มาใช้งาน
+$items_q = $conn->query("SELECT od.*, p.name, p.image FROM order_details od JOIN products p ON od.product_id = p.id WHERE od.order_id = $order_id");
 ?>
 
 <!DOCTYPE html>
@@ -76,6 +77,7 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
         .form-control { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(187, 134, 252, 0.3); color: #fff; border-radius: 12px; }
         .payment-info-box { background: rgba(255, 255, 255, 0.03); border-radius: 20px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.05); }
         .slip-preview { max-width: 200px; border-radius: 15px; border: 2px solid rgba(0, 242, 254, 0.3); cursor: pointer; }
+        .product-img-mini { width: 60px; height: 60px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
         .custom-file-upload { background: rgba(187, 134, 252, 0.1); border: 1px dashed #bb86fc; border-radius: 12px; padding: 15px; cursor: pointer; display: block; text-align: center; }
         .modal-content.custom-popup { background: rgba(26, 0, 40, 0.95); border-radius: 25px; color: #fff; border: 1px solid #bb86fc; }
     </style>
@@ -148,12 +150,21 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
         <div class="mb-5 p-4 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
             <h6 class="text-neon-purple mb-4 text-uppercase small opacity-75">สินค้าในบิลนี้</h6>
             <?php while($item = $items_q->fetch_assoc()): ?>
-            <div class="d-flex justify-content-between mb-3 pb-2 border-bottom border-white border-opacity-10">
-                <span><?= $item['name'] ?> <small class="opacity-50">x <?= $item['quantity'] ?></small></span>
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-white border-opacity-10">
+                <div class="d-flex align-items-center">
+                    <img src="uploads/<?= htmlspecialchars($item['image']) ?>" class="product-img-mini me-3" alt="<?= htmlspecialchars($item['name']) ?>">
+                    <div>
+                        <span class="d-block fw-bold"><?= htmlspecialchars($item['name']) ?></span>
+                        <small class="opacity-50">จำนวน: <?= $item['quantity'] ?> ชิ้น</small>
+                    </div>
+                </div>
                 <span class="text-neon-cyan fw-bold">฿<?= number_format($item['price'] * $item['quantity']) ?></span>
             </div>
             <?php endwhile; ?>
-            <div class="d-flex justify-content-between pt-3"><span class="h5 fw-bold">ยอดรวมสุทธิ</span><span class="h4 fw-bold" style="color:#f107a3; text-shadow: 0 0 10px #f107a3;">฿<?= number_format($order['total_price']) ?></span></div>
+            <div class="d-flex justify-content-between pt-3">
+                <span class="h5 fw-bold">ยอดรวมสุทธิ</span>
+                <span class="h4 fw-bold" style="color:#f107a3; text-shadow: 0 0 10px #f107a3;">฿<?= number_format($order['total_price']) ?></span>
+            </div>
         </div>
 
         <div class="d-flex gap-3 mt-4">
