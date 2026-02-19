@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id']) || !isset($_GET['id'])) {
 
 $order_id = intval($_GET['id']);
 $user_id = $_SESSION['user_id'];
-$show_modal = ""; // ตัวแปรสำหรับเช็คว่าจะเปิด Modal ไหน
+$show_modal = "";
 
 // --- [ฟังก์ชัน]: อัปเดตข้อมูลผู้รับ ---
 if (isset($_POST['update_shipping'])) {
@@ -24,14 +24,14 @@ if (isset($_POST['update_shipping'])) {
                 province = '$new_province', zipcode = '$new_zipcode' 
                 WHERE id = $order_id AND user_id = $user_id AND status = 'pending'";
     if($conn->query($sql_upd)) {
-        $show_modal = "update_success"; // กำหนดให้โชว์ Modal สำเร็จ
+        $show_modal = "update_success";
     }
 }
 
 // --- [ฟังก์ชัน]: ยกเลิกออเดอร์ ---
 if (isset($_POST['confirm_cancel'])) {
     $conn->query("UPDATE orders SET status = 'cancelled' WHERE id = $order_id AND user_id = $user_id AND status = 'pending'");
-    header("Location: profile.php?order_cancelled=1"); // ส่งไปหน้าโปรไฟล์พร้อมแจ้งเตือนยกเลิก
+    header("Location: profile.php?order_cancelled=1");
     exit();
 }
 
@@ -62,34 +62,28 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
         .text-neon-purple { color: #bb86fc; text-shadow: 0 0 10px #bb86fc; }
         .status-pill { background: rgba(187, 134, 252, 0.1); color: #bb86fc; border: 1px solid #bb86fc; padding: 5px 20px; border-radius: 50px; }
         .form-control { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(187, 134, 252, 0.3); color: #fff; border-radius: 12px; }
-        .form-control:focus { background: rgba(255, 255, 255, 0.1); border-color: #00f2fe; color: #fff; box-shadow: none; }
-        
-        /* Modal Custom Style */
-        .modal-content.custom-popup { 
-            background: rgba(26, 0, 40, 0.95); backdrop-filter: blur(25px); 
-            border: 1px solid rgba(187, 134, 252, 0.4); border-radius: 25px; color: #fff; 
-        }
-        .btn-neon-pink { 
-            background: linear-gradient(135deg, #f107a3, #bb86fc); color: #fff; border: none; 
-            font-weight: bold; border-radius: 12px; padding: 10px 30px; 
-        }
+        .payment-info-box { background: rgba(255, 255, 255, 0.03); border-radius: 20px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .slip-preview { max-width: 250px; border-radius: 15px; border: 2px solid rgba(0, 242, 254, 0.3); cursor: pointer; transition: 0.3s; }
+        .slip-preview:hover { transform: scale(1.05); border-color: #00f2fe; }
+        .modal-content.custom-popup { background: rgba(26, 0, 40, 0.95); backdrop-filter: blur(25px); border: 1px solid rgba(187, 134, 252, 0.4); border-radius: 25px; color: #fff; }
+        .btn-neon-pink { background: linear-gradient(135deg, #f107a3, #bb86fc); color: #fff; border: none; font-weight: bold; border-radius: 12px; padding: 10px 30px; }
     </style>
 </head>
 <body>
 <div class="container py-5">
-    <div class="invoice-card mx-auto" style="max-width: 900px;">
+    <div class="invoice-card mx-auto" style="max-width: 950px;">
         <div class="d-flex justify-content-between align-items-center mb-5">
             <a href="profile.php" class="btn btn-outline-light btn-sm rounded-pill"><i class="bi bi-arrow-left"></i> ย้อนกลับ</a>
-            <h3 class="text-neon-cyan mb-0">รายละเอียดบิล</h3>
+            <h3 class="text-neon-cyan mb-0">รายละเอียดบิลความลับ</h3>
             <span class="status-pill fw-bold">
                 <?= $order['status'] == 'pending' ? 'รอการตรวจสอบ' : ($order['status'] == 'cancelled' ? 'ยกเลิกแล้ว' : 'สำเร็จ') ?>
             </span>
         </div>
 
-        <form method="POST">
-            <div class="row g-4 mb-5">
-                <div class="col-md-7 border-end border-secondary border-opacity-25">
-                    <h6 class="text-neon-purple opacity-75 mb-4 text-uppercase">ข้อมูลจัดส่ง</h6>
+        <div class="row g-4 mb-5">
+            <div class="col-lg-6 border-end border-secondary border-opacity-25">
+                <form method="POST">
+                    <h6 class="text-neon-purple opacity-75 mb-4 text-uppercase"><i class="bi bi-geo-alt me-2"></i>ข้อมูลจัดส่ง</h6>
                     <div class="row g-3">
                         <div class="col-md-7">
                             <label class="small opacity-50 mb-1">ชื่อผู้รับ</label>
@@ -101,7 +95,7 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
                         </div>
                         <div class="col-12">
                             <label class="small opacity-50 mb-1">ที่อยู่โดยละเอียด</label>
-                            <textarea name="address" class="form-control" rows="3" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>><?= htmlspecialchars($order['address']) ?></textarea>
+                            <textarea name="address" class="form-control" rows="2" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>><?= htmlspecialchars($order['address']) ?></textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="small opacity-50 mb-1">จังหวัด</label>
@@ -112,34 +106,78 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
                             <input type="text" name="zipcode" class="form-control" value="<?= htmlspecialchars($order['zipcode']) ?>" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>>
                         </div>
                         <?php if($order['status'] == 'pending'): ?>
-                        <div class="col-12"><button type="submit" name="update_shipping" class="btn btn-sm btn-outline-info rounded-pill mt-2">บันทึกข้อมูลใหม่</button></div>
+                        <div class="col-12 text-end"><button type="submit" name="update_shipping" class="btn btn-sm btn-outline-info rounded-pill mt-2">บันทึกข้อมูลใหม่</button></div>
                         <?php endif; ?>
                     </div>
+                </form>
+            </div>
+
+            <div class="col-lg-6 ps-lg-4">
+                <h6 class="text-neon-purple opacity-75 mb-4 text-uppercase"><i class="bi bi-credit-card me-2"></i>ข้อมูลการชำระเงิน</h6>
+                <div class="payment-info-box">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="opacity-75">ช่องทางที่เลือก:</span>
+                        <span class="fw-bold text-neon-cyan">
+                            <?= $order['payment_method'] == 'bank' ? 'โอนเงินผ่านธนาคาร' : 'เก็บเงินปลายทาง' ?>
+                        </span>
+                    </div>
+                    
+                    <?php if($order['payment_method'] == 'bank'): ?>
+                        <div class="text-center mt-3">
+                            <p class="small opacity-50 mb-2">หลักฐานการโอนเงิน (สลิป):</p>
+                            <?php if(!empty($order['slip_image'])): ?>
+                                <img src="uploads/slips/<?= $order['slip_image'] ?>" class="slip-preview img-fluid" data-bs-toggle="modal" data-bs-target="#slipModal">
+                            <?php else: ?>
+                                <div class="p-4 border border-dashed border-secondary rounded-3 opacity-50 small">
+                                    <i class="bi bi-image mb-2 d-block fs-3"></i>
+                                    ไม่พบรูปภาพสลิปในระบบ
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center p-3 opacity-50 small border border-secondary border-opacity-25 rounded-3">
+                            <i class="bi bi-truck mb-2 d-block fs-3"></i>
+                            ชำระเงินกับพนักงานจัดส่งเมื่อได้รับสินค้า
+                        </div>
+                    <?php endif; ?>
                 </div>
-                <div class="col-md-5 ps-md-4">
-                    <h6 class="text-neon-purple opacity-75 mb-4 text-uppercase">สรุปออเดอร์</h6>
-                    <p class="mb-2">รหัสออเดอร์: <span class="text-neon-cyan">#<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></span></p>
-                    <p class="small opacity-50">สั่งซื้อเมื่อ: <?= date('d/m/Y H:i', strtotime($order['created_at'])) ?></p>
+                <div class="mt-4 small opacity-50">
+                    <p class="mb-1">รหัสออเดอร์: #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></p>
+                    <p class="mb-0">สั่งซื้อเมื่อ: <?= date('d M Y, H:i', strtotime($order['created_at'])) ?></p>
                 </div>
             </div>
-        </form>
+        </div>
 
-        <div class="item-list mb-5 p-4 rounded-4" style="background: rgba(255,255,255,0.02);">
+        <div class="mb-5 p-4 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+            <h6 class="text-neon-purple mb-4 text-uppercase small opacity-75">รายการสินค้าในบิลนี้</h6>
             <?php while($item = $items_q->fetch_assoc()): ?>
-            <div class="d-flex justify-content-between mb-2">
-                <span><?= $item['name'] ?> x <?= $item['quantity'] ?></span>
+            <div class="d-flex justify-content-between mb-3 pb-3 border-bottom border-white border-opacity-10">
+                <span><?= $item['name'] ?> <span class="text-neon-purple opacity-75 ms-2">x <?= $item['quantity'] ?></span></span>
                 <span class="text-neon-cyan fw-bold">฿<?= number_format($item['price'] * $item['quantity']) ?></span>
             </div>
             <?php endwhile; ?>
-            <hr class="opacity-10">
-            <div class="d-flex justify-content-between"><span class="h5">ราคาสุทธิ</span><span class="h4 fw-bold" style="color:#f107a3;">฿<?= number_format($order['total_price']) ?></span></div>
+            <div class="d-flex justify-content-between pt-3">
+                <span class="h5 fw-bold mb-0">ราคาสุทธิ</span>
+                <span class="h4 fw-bold mb-0" style="color:#f107a3; text-shadow: 0 0 10px #f107a3;">฿<?= number_format($order['total_price']) ?></span>
+            </div>
         </div>
 
-        <div class="d-flex gap-3 mt-4">
+        <div class="d-flex gap-3">
             <?php if($order['status'] == 'pending'): ?>
                 <button type="button" class="btn btn-outline-danger w-100 rounded-pill py-3" data-bs-toggle="modal" data-bs-target="#confirmCancelModal">ยกเลิกคำสั่งซื้อนี้</button>
             <?php endif; ?>
             <a href="profile.php" class="btn btn-outline-info w-100 rounded-pill py-3">ย้อนกลับ</a>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="slipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-transparent">
+            <div class="modal-body p-0 text-center">
+                <img src="uploads/slips/<?= $order['slip_image'] ?>" class="img-fluid rounded-4 shadow-lg" style="max-height: 85vh;">
+                <button type="button" class="btn btn-light rounded-pill mt-3 px-4" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
+            </div>
         </div>
     </div>
 </div>
