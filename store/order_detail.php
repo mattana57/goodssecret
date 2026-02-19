@@ -11,17 +11,14 @@ $order_id = intval($_GET['id']);
 $user_id = $_SESSION['user_id'];
 $show_modal = "";
 
-// --- [ฟังก์ชัน]: อัปเดตสลิปเงินโอน (เพิ่มใหม่ตามสั่ง) ---
+// --- [ฟังก์ชันใหม่ที่เพิ่มเข้าไป]: อัปเดตสลิปเงินโอน ---
 if (isset($_POST['update_slip']) && isset($_FILES['slip_image'])) {
     $file = $_FILES['slip_image'];
     if ($file['error'] === 0) {
         $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
         $new_name = "slip_" . $order_id . "_" . time() . "." . $ext;
         $target = "uploads/slips/" . $new_name;
-
-        // สร้างโฟลเดอร์ถ้ายังไม่มี
         if (!is_dir("uploads/slips/")) { mkdir("uploads/slips/", 0777, true); }
-
         if (move_uploaded_file($file['tmp_name'], $target)) {
             $conn->query("UPDATE orders SET slip_image = '$new_name' WHERE id = $order_id AND user_id = $user_id");
             $show_modal = "update_success";
@@ -29,7 +26,7 @@ if (isset($_POST['update_slip']) && isset($_FILES['slip_image'])) {
     }
 }
 
-// --- [ฟังก์ชัน]: อัปเดตข้อมูลผู้รับ (ที่อยู่/ชื่อ/เบอร์) ---
+// --- [ฟังก์ชันเดิม]: อัปเดตข้อมูลผู้รับ ---
 if (isset($_POST['update_shipping'])) {
     $new_fullname = $conn->real_escape_string($_POST['fullname']);
     $new_phone = $conn->real_escape_string($_POST['phone']);
@@ -46,7 +43,7 @@ if (isset($_POST['update_shipping'])) {
     }
 }
 
-// --- [ฟังก์ชัน]: ยืนยันยกเลิกออเดอร์ ---
+// --- [ฟังก์ชันเดิม]: ยืนยันยกเลิกออเดอร์ ---
 if (isset($_POST['confirm_cancel'])) {
     $conn->query("UPDATE orders SET status = 'cancelled' WHERE id = $order_id AND user_id = $user_id AND status = 'pending'");
     header("Location: profile.php?order_cancelled=1");
@@ -87,7 +84,7 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
 <div class="container py-5">
     <div class="invoice-card mx-auto" style="max-width: 950px;">
         <div class="d-flex justify-content-between align-items-center mb-5">
-            <a href="profile.php" class="btn btn-outline-light btn-sm rounded-pill"><i class=\"bi bi-arrow-left\"></i> ย้อนกลับ</a>
+            <a href="profile.php" class="btn btn-outline-light btn-sm rounded-pill"><i class="bi bi-arrow-left"></i> ย้อนกลับ</a>
             <h3 class="text-neon-cyan mb-0">รายละเอียดบิลความลับ</h3>
             <span class="status-pill fw-bold"><?= $order['status'] == 'pending' ? 'รอตรวจสอบ' : ($order['status'] == 'cancelled' ? 'ยกเลิกแล้ว' : 'สำเร็จ') ?></span>
         </div>
@@ -121,7 +118,7 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
                         <form method="POST" enctype="multipart/form-data">
                             <div class="text-center">
                                 <?php if(!empty($order['slip_image'])): ?>
-                                    <p class="small opacity-50 mb-2">สลิปปัจจุบัน (คลิกเพื่อดูภาพใหญ่):</p>
+                                    <p class="small opacity-50 mb-2">สลิปปัจจุบัน:</p>
                                     <img src="uploads/slips/<?= $order['slip_image'] ?>" class="slip-preview mb-3" onclick="window.open(this.src)">
                                 <?php endif; ?>
 
@@ -131,12 +128,10 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
                                         <span id="fileName"><?= empty($order['slip_image']) ? 'แนบสลิปเงินโอน' : 'เปลี่ยนรูปสลิปใหม่' ?></span>
                                     </label>
                                     <input type="file" name="slip_image" id="slipInput" hidden accept="image/*" onchange="previewImage(this)">
-                                    
                                     <div id="previewContainer" style="display:none;" class="mb-3">
-                                        <p class="small text-info mb-1">รูปตัวอย่างที่เลือกใหม่:</p>
+                                        <p class="small text-info mb-1">รูปตัวอย่างใหม่:</p>
                                         <img id="imagePreview" class="slip-preview">
                                     </div>
-                                    
                                     <button type="submit" name="update_slip" id="saveSlipBtn" class="btn btn-sm w-100 rounded-pill" style="display:none; background: linear-gradient(45deg, #f107a3, #bb86fc); color: white; border:none; padding:10px;">บันทึกสลิปใหม่</button>
                                 <?php endif; ?>
                             </div>
@@ -195,7 +190,6 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // ฟังก์ชันโชว์รูปตัวอย่างก่อนอัปโหลด
     function previewImage(input) {
         if (input.files && input.files[0]) {
             var reader = new FileReader();
@@ -208,7 +202,6 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
             reader.readAsDataURL(input.files[0]);
         }
     }
-
     document.addEventListener('DOMContentLoaded', function() {
         <?php if($show_modal === "update_success"): ?>
             new bootstrap.Modal(document.getElementById('successUpdateModal')).show();
