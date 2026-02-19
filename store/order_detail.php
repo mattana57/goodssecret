@@ -11,7 +11,7 @@ $order_id = intval($_GET['id']);
 $user_id = $_SESSION['user_id'];
 $show_modal = "";
 
-// --- [ฟังก์ชันใหม่ที่เพิ่มเข้าไป]: อัปเดตสลิปเงินโอน ---
+// --- [ฟังก์ชัน]: อัปเดตสลิปเงินโอน (แทรกเพิ่ม) ---
 if (isset($_POST['update_slip']) && isset($_FILES['slip_image'])) {
     $file = $_FILES['slip_image'];
     if ($file['error'] === 0) {
@@ -26,7 +26,7 @@ if (isset($_POST['update_slip']) && isset($_FILES['slip_image'])) {
     }
 }
 
-// --- [ฟังก์ชันเดิม]: อัปเดตข้อมูลผู้รับ ---
+// --- [ฟังก์ชัน]: อัปเดตข้อมูลผู้รับ ---
 if (isset($_POST['update_shipping'])) {
     $new_fullname = $conn->real_escape_string($_POST['fullname']);
     $new_phone = $conn->real_escape_string($_POST['phone']);
@@ -43,7 +43,7 @@ if (isset($_POST['update_shipping'])) {
     }
 }
 
-// --- [ฟังก์ชันเดิม]: ยืนยันยกเลิกออเดอร์ ---
+// --- [ฟังก์ชัน]: ยืนยันยกเลิกออเดอร์ ---
 if (isset($_POST['confirm_cancel'])) {
     $conn->query("UPDATE orders SET status = 'cancelled' WHERE id = $order_id AND user_id = $user_id AND status = 'pending'");
     header("Location: profile.php?order_cancelled=1");
@@ -75,7 +75,7 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
         .status-pill { background: rgba(187, 134, 252, 0.1); color: #bb86fc; border: 1px solid #bb86fc; padding: 5px 20px; border-radius: 50px; }
         .form-control { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(187, 134, 252, 0.3); color: #fff; border-radius: 12px; }
         .payment-info-box { background: rgba(255, 255, 255, 0.03); border-radius: 20px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.05); }
-        .slip-preview { max-width: 200px; border-radius: 15px; border: 2px solid rgba(0, 242, 254, 0.3); cursor: pointer; transition: 0.3s; }
+        .slip-preview { max-width: 200px; border-radius: 15px; border: 2px solid rgba(0, 242, 254, 0.3); cursor: pointer; }
         .custom-file-upload { background: rgba(187, 134, 252, 0.1); border: 1px dashed #bb86fc; border-radius: 12px; padding: 15px; cursor: pointer; display: block; text-align: center; }
         .modal-content.custom-popup { background: rgba(26, 0, 40, 0.95); border-radius: 25px; color: #fff; border: 1px solid #bb86fc; }
     </style>
@@ -97,8 +97,8 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
                         <div class="col-md-7"><label class="small opacity-50">ชื่อผู้รับ</label><input type="text" name="fullname" class="form-control" value="<?= htmlspecialchars($order['fullname']) ?>" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>></div>
                         <div class="col-md-5"><label class="small opacity-50">เบอร์โทร</label><input type="tel" name="phone" class="form-control" value="<?= htmlspecialchars($order['phone']) ?>" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>></div>
                         <div class="col-12"><label class="small opacity-50">ที่อยู่</label><textarea name="address" class="form-control" rows="2" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>><?= htmlspecialchars($order['address']) ?></textarea></div>
-                        <div class="col-md-6"><input type="text" name="province" class="form-control" placeholder="จังหวัด" value="<?= htmlspecialchars($order['province']) ?>" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>></div>
-                        <div class="col-md-6"><input type="text" name="zipcode" class="form-control" placeholder="รหัสไปรษณีย์" value="<?= htmlspecialchars($order['zipcode']) ?>" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>></div>
+                        <div class="col-md-6"><label class="small opacity-50">จังหวัด</label><input type="text" name="province" class="form-control" value="<?= htmlspecialchars($order['province']) ?>" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>></div>
+                        <div class="col-md-6"><label class="small opacity-50">รหัสไปรษณีย์</label><input type="text" name="zipcode" class="form-control" value="<?= htmlspecialchars($order['zipcode']) ?>" <?= $order['status'] != 'pending' ? 'disabled' : '' ?>></div>
                         <?php if($order['status'] == 'pending'): ?>
                         <div class="col-12 text-end"><button type="submit" name="update_shipping" class="btn btn-sm btn-outline-info rounded-pill mt-1">บันทึกข้อมูลจัดส่งใหม่</button></div>
                         <?php endif; ?>
@@ -107,18 +107,22 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
             </div>
 
             <div class="col-lg-6 ps-lg-4">
-                <h6 class="text-neon-purple mb-4 text-uppercase small"><i class="bi bi-credit-card me-2"></i>การชำระเงิน</h6>
+                <h6 class="text-neon-purple mb-4 text-uppercase small"><i class="bi bi-info-circle me-2"></i>ข้อมูลบิลและการชำระเงิน</h6>
                 <div class="payment-info-box">
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="opacity-75">วิธีชำระ:</span>
-                        <span class="fw-bold text-neon-cyan"><?= $order['payment_method'] == 'bank' ? 'โอนเงินผ่านธนาคาร' : 'เก็บเงินปลายทาง' ?></span>
+                    <div class="mb-4">
+                        <p class="mb-1 small opacity-50">หมายเลขบิล:</p>
+                        <p class="h5 text-neon-cyan fw-bold">#<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></p>
+                        <p class="mb-1 mt-3 small opacity-50">วันที่สั่งซื้อ:</p>
+                        <p class="mb-0 small"><?= date('d/m/Y H:i', strtotime($order['created_at'])) ?></p>
+                        <p class="mb-1 mt-3 small opacity-50">วิธีชำระเงิน:</p>
+                        <p class="mb-0 small fw-bold"><?= $order['payment_method'] == 'bank' ? 'โอนเงินผ่านธนาคาร' : 'เก็บเงินปลายทาง' ?></p>
                     </div>
 
                     <?php if($order['payment_method'] == 'bank'): ?>
                         <form method="POST" enctype="multipart/form-data">
-                            <div class="text-center">
+                            <div class="text-center pt-3 border-top border-white border-opacity-10">
                                 <?php if(!empty($order['slip_image'])): ?>
-                                    <p class="small opacity-50 mb-2">สลิปปัจจุบัน:</p>
+                                    <p class="small opacity-50 mb-2">หลักฐานปัจจุบัน:</p>
                                     <img src="uploads/slips/<?= $order['slip_image'] ?>" class="slip-preview mb-3" onclick="window.open(this.src)">
                                 <?php endif; ?>
 
@@ -136,8 +140,6 @@ $items_q = $conn->query("SELECT od.*, p.name FROM order_details od JOIN products
                                 <?php endif; ?>
                             </div>
                         </form>
-                    <?php else: ?>
-                        <div class="text-center p-3 opacity-50 small border border-secondary rounded-3"><i class="bi bi-truck d-block fs-2 mb-2"></i>ชำระเงินสดเมื่อได้รับสินค้า</div>
                     <?php endif; ?>
                 </div>
             </div>
