@@ -49,7 +49,7 @@ $result = $conn->query($sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        /* --- [โค้ด CSS เดิมของคุณทั้งหมด] --- */
+        /* --- [โค้ด CSS เดิมของคุณทั้งหมด ห้ามแตะ] --- */
         body {
             background-color: #0f172a;
             color: #ffffff !important;
@@ -225,7 +225,7 @@ $result = $conn->query($sql);
                 <h3 class="fw-bold mb-3" style="color: #ff4d4d;">ยืนยันการลบ?</h3>
                 <p class="fs-5 opacity-75 mb-4 text-white">ลบสินค้าชิ้นนี้ออกจากตะกร้า?</p>
                 <div class="d-flex justify-content-center gap-3">
-                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss=\"modal\">ยกเลิก</button>
                     <a id="confirmDeleteBtn" href="#" class="btn btn-danger rounded-pill px-4 text-decoration-none">ยืนยัน</a>
                 </div>
             </div>
