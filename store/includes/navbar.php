@@ -24,24 +24,15 @@ if(isset($_SESSION['user_id'])){
 }
 .badge-cart {
     position: absolute; top: -5px; right: -5px;
-    background: #ff4d4d; color: white; font-size: 11px;
-    padding: 2px 6px; border-radius: 50%; font-weight: bold;
-    border: 2px solid #2d0b4e;
+    background: #ff4d4d; color: white; font-size: 10px;
+    padding: 2px 6px; border-radius: 50%; border: 2px solid #5b21b6;
 }
-.logout-btn, .login-btn, .register-btn {
-    background: #c084fc; padding: 8px 18px; border-radius: 20px;
-    text-decoration: none; color: #fff; font-weight: 500; transition: 0.3s;
-}
-.logout-btn:hover, .login-btn:hover, .register-btn:hover, .icon-btn:hover { background: #a855f7; }
-
-/* --- ส่วนที่เพิ่ม: ปรับไอคอนบัญชีให้เหมือนปุ่มตะกร้า --- */
 .account-icon-btn {
-    background: rgba(255, 255, 255, 0.15); 
-    padding: 8px 12px; 
-    border-radius: 50%; 
-    text-decoration: none; 
-    color: #fff; 
-    font-size: 18px; 
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 50%;
+    font-size: 20px;
     transition: 0.3s;
     border: 1px solid rgba(255,255,255,0.2);
 }
@@ -49,6 +40,21 @@ if(isset($_SESSION['user_id'])){
     background: #bb86fc;
     color: #120018;
     box-shadow: 0 0 10px #bb86fc;
+}
+/* [เพิ่ม]: สไตล์ปุ่มแอดมินให้เด่นนิดนึง */
+.admin-btn {
+    background: #03dac6;
+    color: #000;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 5px 15px;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: 0.3s;
+}
+.admin-btn:hover {
+    background: #fff;
+    box-shadow: 0 0 15px #03dac6;
 }
 </style>
 
@@ -63,6 +69,12 @@ if(isset($_SESSION['user_id'])){
 
             <?php if(isset($_SESSION['user_id'])){ ?>
                 
+                <?php if(isset($_SESSION['role']) && $_SESSION['role'] == 'admin'){ ?>
+                    <a href="index2.php" class="admin-btn">
+                        <i class="bi bi-speedometer2"></i> จัดการระบบ
+                    </a>
+                <?php } ?>
+
                 <a href="profile.php" class="account-icon-btn" title="บัญชีของฉัน">
                     <i class="bi bi-person-circle"></i>
                 </a>
@@ -74,11 +86,10 @@ if(isset($_SESSION['user_id'])){
                     </span>
                 </a>
 
-                <a href="logout.php" class="logout-btn">ออกจากระบบ</a>
-
+                <a href="logout.php" class="btn btn-outline-light btn-sm">ออกซิ</a>
+            
             <?php } else { ?>
-                <a href="login.php" class="login-btn">เข้าสู่ระบบ</a>
-                <a href="register.php" class="register-btn">สมัครสมาชิก</a>
+                <a href="login.php" class="btn btn-light btn-sm fw-bold">เข้าสู่ระบบ</a>
             <?php } ?>
         </div>
     </div>
