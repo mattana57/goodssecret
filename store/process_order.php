@@ -18,6 +18,7 @@ $zipcode = $conn->real_escape_string($_POST['zipcode']);
 $payment_method = ($_POST['payment_method'] === 'bank_transfer') ? 'bank' : 'cod';
 $order_status = "pending";
 
+// [จุดแก้ไข]: ดึงข้อมูลตะกร้าโดยเอา variant_id มาด้วยเพื่อให้บันทึกออเดอร์ได้ถูกต้อง
 $sql_cart = "SELECT cart.*, products.price FROM cart 
              JOIN products ON cart.product_id = products.id 
              WHERE cart.user_id = $user_id";
@@ -30,48 +31,47 @@ while ($item = $cart_items->fetch_assoc()) { $total_price += ($item['price'] * $
 
 // จัดการรูปภาพสลิป
 $slip_name = "";
-if ($payment_method === 'bank' && isset($_FILES['slip_image']) && $_FILES['slip_image']['error'] == 0) {
+if ($payment_method === 'bank' && isset($_FILES['slip_image']) && $_FILES['slip_image']['error'] === 0) {
     $ext = pathinfo($_FILES['slip_image']['name'], PATHINFO_EXTENSION);
     $slip_name = "slip_" . time() . "_" . $user_id . "." . $ext;
-    
-    $target_dir = "uploads/slips/";
-    if (!is_dir($target_dir)) { @mkdir($target_dir, 0777, true); }
-    move_uploaded_file($_FILES['slip_image']['tmp_name'], $target_dir . $slip_name);
+    if (!is_dir("uploads/slips/")) { mkdir("uploads/slips/", 0777, true); }
+    move_uploaded_file($_FILES['slip_image']['tmp_name'], "uploads/slips/" . $slip_name);
 }
 
 $conn->begin_transaction();
-
 try {
-    // อัปเดตที่อยู่ลงโปรไฟล์
+    // อัปเดตข้อมูลผู้ใช้ล่าสุด
     $sql_update_user = "UPDATE users SET 
                         fullname = '$fullname', phone = '$phone', address = '$address', 
                         province = '$province', zipcode = '$zipcode' 
                         WHERE id = $user_id";
     $conn->query($sql_update_user);
 
-    // บันทึกออเดอร์
+    // บันทึกออเดอร์หลักลงตาราง orders
     $sql_order = "INSERT INTO orders (user_id, total_price, fullname, phone, address, province, zipcode, payment_method, slip_image, status, created_at) 
                   VALUES ('$user_id', '$total_price', '$fullname', '$phone', '$address', '$province', '$zipcode', '$payment_method', '$slip_name', '$order_status', NOW())";
     
     if ($conn->query($sql_order)) {
         $order_id = $conn->insert_id;
         $cart_items->data_seek(0);
+        
+        // [จุดแก้ไขสำคัญ]: บันทึก variant_id ลงในรายละเอียดสินค้า (ถ้าไม่มีรุ่นให้ใส่ NULL)
         while ($item = $cart_items->fetch_assoc()) {
-            $sql_details = "INSERT INTO order_details (order_id, product_id, quantity, price) 
-                            VALUES ('$order_id', '{$item['product_id']}', '{$item['quantity']}', '{$item['price']}')";
+            $v_id = !empty($item['variant_id']) ? $item['variant_id'] : "NULL";
+            $sql_details = "INSERT INTO order_details (order_id, product_id, variant_id, quantity, price) 
+                            VALUES ('$order_id', '{$item['product_id']}', $v_id, '{$item['quantity']}', '{$item['price']}')";
             $conn->query($sql_details);
         }
+        
         $conn->query("DELETE FROM cart WHERE user_id = $user_id");
         $conn->commit();
         
-        // --- [จุดที่แก้ไข]: แทนที่จะใช้ alert ให้ส่งค่าไปเปิด Modal ที่หน้า profile ---
+        // แทนที่จะใช้ alert ให้ส่งค่าไปเปิด Modal ที่หน้า profile
         header("Location: profile.php?order_complete=1");
         exit();
-    } else {
-        throw new Exception("SQL Error: " . $conn->error);
     }
 } catch (Exception $e) {
     $conn->rollback();
-    die("เกิดข้อผิดพลาด: " . $e->getMessage());
+    die("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " . $e->getMessage());
 }
 ?>
