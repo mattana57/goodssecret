@@ -87,39 +87,59 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        /* --- [ปรับปรุง]: ตัวหนังสือสว่าง และสีปุ่มธีมนีออน --- */
-        body { background: #0c001c; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
-        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(187, 134, 252, 0.2); border-radius: 25px; padding: 30px; color: #ffffff; }
+        /* --- [ปรับปรุงการมองเห็นตัวหนังสือและช่องพิมพ์] --- */
+        body { background: #0c001c; color: #ffffff !important; font-family: 'Segoe UI', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(15px); border: 1px solid rgba(187, 134, 252, 0.2); border-radius: 25px; padding: 30px; color: #ffffff !important; }
         
-        /* สไตล์ Tabs */
         .nav-pills .nav-link { color: #ffffff; border-radius: 12px; margin: 0 5px; transition: 0.3s; border: 1px solid transparent; }
         .nav-pills .nav-link.active { background: #bb86fc !important; color: #120018 !important; box-shadow: 0 0 15px #bb86fc; font-weight: bold; }
         
         .text-neon-pink { color: #f107a3 !important; text-shadow: 0 0 10px rgba(241, 7, 163, 0.6); }
         .table { --bs-table-bg: transparent; color: #ffffff !important; }
-        .table thead th { color: #00f2fe !important; border-bottom: 2px solid rgba(0, 242, 254, 0.3); }
+        .table thead th { color: #00f2fe !important; border-bottom: 2px solid rgba(0, 242, 254, 0.3); font-weight: bold; }
         .table tbody td { color: #ffffff !important; vertical-align: middle; border-color: rgba(255,255,255,0.1); }
         
-        /* ปรับสีปุ่มหลักเป็นชมพูนีออน */
         .btn-primary { background: linear-gradient(135deg, #f107a3, #bb86fc); border: none; box-shadow: 0 4px 12px rgba(241, 7, 163, 0.3); }
         .btn-primary:hover { background: linear-gradient(135deg, #bb86fc, #f107a3); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(241, 7, 163, 0.5); }
         
-        /* ปรับสีปุ่ม Outline จัดการ */
         .btn-outline-info { color: #00f2fe; border-color: #00f2fe; }
         .btn-outline-info:hover { background: #00f2fe; color: #000; box-shadow: 0 0 10px #00f2fe; }
         .btn-outline-light { color: #e2e8f0; border-color: rgba(255,255,255,0.3); }
         .btn-outline-light:hover { background: #fff; color: #000; }
-        .btn-success { background: #00f2fe; border: none; color: #000; font-weight: bold; }
-        .btn-success:hover { background: #fff; box-shadow: 0 0 15px #00f2fe; }
+        .btn-success { background: #00f2fe !important; border: none; color: #000 !important; font-weight: bold; }
 
-        .modal-content { background: #1a0028; border: 1px solid #bb86fc; border-radius: 20px; color: #ffffff; }
-        .form-control, .form-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(187,134,252,0.3); color: #ffffff !important; }
+        .modal-content { background: #1a0028 !important; border: 1px solid #bb86fc; border-radius: 20px; color: #ffffff !important; }
+        
+        /* --- [ส่วนที่แก้ไข]: ปรับช่องพิมพ์ไม่ให้ขาวเวลาคลิก และตัวหนังสือชัดเจน --- */
+        .form-control, .form-select { 
+            background: rgba(255, 255, 255, 0.08) !important; 
+            border: 1px solid rgba(187, 134, 252, 0.4) !important; 
+            color: #ffffff !important; 
+        }
+        .form-control:focus, .form-select:focus { 
+            background: rgba(255, 255, 255, 0.12) !important; 
+            border-color: #00f2fe !important; 
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.4) !important; 
+            color: #ffffff !important; 
+        }
+        /* แก้ไขปัญหาช่องพิมพ์ขาวใน Chrome/Edge */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #ffffff !important;
+            -webkit-box-shadow: 0 0 0px 1000px #1a0028 inset !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
         .product-img { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
         .slip-preview { width: 45px; height: 45px; object-fit: cover; cursor: pointer; border: 1px solid #00f2fe; border-radius: 5px; }
         
-        /* DataTables Styling */
         .dataTables_wrapper { color: #ffffff !important; }
-        .dataTables_length select, .dataTables_filter input { background: rgba(255,255,255,0.1) !important; color: #fff !important; border: 1px solid rgba(187,134,252,0.4) !important; }
+        .dataTables_length select, .dataTables_filter input { 
+            background: rgba(255,255,255,0.08) !important; 
+            color: #ffffff !important; 
+            border: 1px solid rgba(187,134,252,0.4) !important; 
+        }
     </style>
 </head>
 <body>
@@ -144,7 +164,7 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         <div class="tab-pane fade show active" id="products">
             <div class="glass-panel">
                 <div class="d-flex justify-content-between mb-4 align-items-center">
-                    <h4 class="fw-bold"><i class="bi bi-box-seam me-2"></i>รายการสินค้า</h4>
+                    <h4 class="fw-bold">รายการสินค้า</h4>
                     <button class="btn btn-primary rounded-pill px-4" onclick="openAddProduct()">+ เพิ่มสินค้าใหม่</button>
                 </div>
                 <table class="table table-hover datatable-js">
@@ -174,7 +194,7 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         <div class="tab-pane fade" id="categories">
             <div class="glass-panel">
                 <div class="d-flex justify-content-between mb-4 align-items-center">
-                    <h4 class="fw-bold"><i class="bi bi-tags me-2"></i>ข้อมูลประเภทสินค้า</h4>
+                    <h4 class="fw-bold">ข้อมูลประเภทสินค้า</h4>
                     <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="openCatModal()">+ เพิ่มประเภทสินค้า</button>
                 </div>
                 <table class="table table-hover datatable-js">
@@ -197,7 +217,7 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
 
         <div class="tab-pane fade" id="customers">
             <div class="glass-panel">
-                <h4 class="fw-bold mb-4"><i class="bi bi-people me-2"></i>ข้อมูลลูกค้าในระบบ</h4>
+                <h4 class="fw-bold mb-4">ข้อมูลลูกค้าในระบบ</h4>
                 <table class="table table-hover datatable-js">
                     <thead><tr><th>Username</th><th>ชื่อ-นามสกุล</th><th>เบอร์โทร</th><th>จัดการ</th></tr></thead>
                     <tbody>
@@ -218,7 +238,7 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
 
         <div class="tab-pane fade" id="orders">
             <div class="glass-panel">
-                <h4 class="fw-bold mb-4"><i class="bi bi-receipt me-2"></i>รายการสั่งซื้อ</h4>
+                <h4 class="fw-bold mb-4">รายการสั่งซื้อ</h4>
                 <table class="table table-hover datatable-js">
                     <thead><tr><th>วันที่</th><th>บิล ID</th><th>ชื่อลูกค้า</th><th>ยอดสุทธิ</th><th>สลิป</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
                     <tbody>
@@ -251,11 +271,11 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         <div class="modal-header border-secondary"><h5 class="modal-title" id="p_title">จัดการสินค้า</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <input type="hidden" name="product_id" id="p_id">
-            <div class="mb-3"><label>ชื่อสินค้า</label><input type="text" name="name" id="p_name" class="form-control" required></div>
-            <div class="row"><div class="col-6 mb-3"><label>ราคา</label><input type="number" name="price" id="p_price" class="form-control" required></div>
-            <div class="col-6 mb-3"><label>ประเภท</label><select name="category_id" id="p_cat" class="form-select"><?php $categories_list->data_seek(0); while($c=$categories_list->fetch_assoc()): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endwhile; ?></select></div></div>
-            <div class="mb-3"><label>รายละเอียด</label><textarea name="description" id="p_desc" class="form-control" rows="2"></textarea></div>
-            <div class="mb-3"><label>รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
+            <div class="mb-3"><label class="form-label">ชื่อสินค้า</label><input type="text" name="name" id="p_name" class="form-control" required></div>
+            <div class="row"><div class="col-6 mb-3"><label class="form-label">ราคา</label><input type="number" name="price" id="p_price" class="form-control" required></div>
+            <div class="col-6 mb-3"><label class="form-label">ประเภท</label><select name="category_id" id="p_cat" class="form-select"><?php $categories_list->data_seek(0); while($c=$categories_list->fetch_assoc()): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endwhile; ?></select></div></div>
+            <div class="mb-3"><label class="form-label">รายละเอียด</label><textarea name="description" id="p_desc" class="form-control" rows="2"></textarea></div>
+            <div class="mb-3"><label class="form-label">รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
         </div>
         <div class="modal-footer border-secondary"><button type="submit" name="save_product" class="btn btn-primary px-4">บันทึกข้อมูล</button></div>
     </form></div>
@@ -266,7 +286,7 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         <div class="modal-header border-secondary"><h5 class="modal-title" id="cat_title">จัดการประเภทสินค้า</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <input type="hidden" name="cat_id" id="cat_id">
-            <div class="mb-3"><label>ชื่อประเภทสินค้า</label><input type="text" name="cat_name" id="cat_name" class="form-control" required></div>
+            <div class="mb-3"><label class="form-label">ชื่อประเภทสินค้า</label><input type="text" name="cat_name" id="cat_name" class="form-control" required></div>
         </div>
         <div class="modal-footer border-secondary"><button type="submit" name="save_category" class="btn btn-primary">บันทึก</button></div>
     </form></div>
@@ -277,9 +297,9 @@ $orders = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         <div class="modal-header border-secondary"><h5 class="modal-title">เพิ่มรุ่นย่อย: <span id="v_pname"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <input type="hidden" name="product_id" id="v_pid">
-            <div class="mb-3"><label>ชื่อรุ่น (เช่น ปลาห้อย, โจรมุมตึก)</label><input type="text" name="v_name" class="form-control" required></div>
-            <div class="mb-3"><label>จำนวนสต็อก</label><input type="number" name="v_stock" class="form-control" value="10"></div>
-            <div class="mb-3"><label>รูปภาพเฉพาะรุ่น</label><input type="file" name="v_image" class="form-control" required></div>
+            <div class="mb-3"><label class="form-label">ชื่อรุ่น (เช่น ปลาห้อย, โจรมุมตึก)</label><input type="text" name="v_name" class="form-control" required></div>
+            <div class="mb-3"><label class="form-label">จำนวนสต็อก</label><input type="number" name="v_stock" class="form-control" value="10"></div>
+            <div class="mb-3"><label class="form-label">รูปภาพเฉพาะรุ่น</label><input type="file" name="v_image" class="form-control" required></div>
         </div>
         <div class="modal-footer border-secondary"><button type="submit" name="add_variant" class="btn btn-primary">บันทึกรุ่นย่อย</button></div>
     </form></div>
