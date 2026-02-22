@@ -8,8 +8,19 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// --- [ส่วน AJAX]: ดึงข้อมูลประวัติออเดอร์และรายการสินค้าในบิล ---
+// --- [ส่วน AJAX]: จัดการสต็อกสินค้า และดึงประวัติธุรกรรม ---
 if (isset($_GET['ajax_action'])) {
+    // 1. ปรับสต็อกสินค้า (เพิ่ม/ลด)
+    if ($_GET['ajax_action'] == 'update_stock') {
+        $vid = intval($_GET['vid']);
+        $amount = intval($_GET['amount']);
+        $conn->query("UPDATE product_variants SET stock = stock + ($amount) WHERE id = $vid");
+        $q = $conn->query("SELECT stock FROM product_variants WHERE id = $vid");
+        $res = $q->fetch_assoc();
+        echo $res['stock']; exit();
+    }
+
+    // 2. ดึงประวัติธุรกรรมลูกค้า
     if ($_GET['ajax_action'] == 'get_user_history') {
         $uid = intval($_GET['uid']);
         $q = $conn->query("SELECT * FROM orders WHERE user_id = $uid ORDER BY created_at DESC");
@@ -28,6 +39,7 @@ if (isset($_GET['ajax_action'])) {
         echo $html . '</tbody></table>'; exit();
     }
     
+    // 3. ดึงรายการสินค้าในบิล
     if ($_GET['ajax_action'] == 'get_order_items') {
         $oid = intval($_GET['oid']);
         $q = $conn->query("SELECT od.*, p.name, pv.variant_name FROM order_details od JOIN products p ON od.product_id = p.id LEFT JOIN product_variants pv ON od.variant_id = pv.id WHERE od.order_id = $oid");
@@ -43,27 +55,18 @@ if (isset($_GET['ajax_action'])) {
     }
 }
 
-// --- [Logic จัดการข้อมูล]: Categories, Products, Variants, Orders, Users, Delete ---
+// --- [Logic จัดการข้อมูลหลัก]: Categories, Products, Variants, Orders, Users, Delete ---
 if (isset($_POST['save_category'])) { $name = $conn->real_escape_string($_POST['cat_name']); $slug = strtolower(str_replace(' ', '-', $name)); if (!empty($_POST['cat_id'])) { $conn->query("UPDATE categories SET name='$name', slug='$slug' WHERE id=".intval($_POST['cat_id'])); } else { $conn->query("INSERT INTO categories (name, slug) VALUES ('$name', '$slug')"); } header("Location: admin_dashboard.php?tab=categories&success=1"); exit(); }
 if (isset($_POST['save_product'])) { $name = $conn->real_escape_string($_POST['name']); $price = $_POST['price']; $cat_id = $_POST['category_id']; $desc = $conn->real_escape_string($_POST['description']); if (!empty($_POST['product_id'])) { $p_id = intval($_POST['product_id']); $sql = "UPDATE products SET name='$name', price='$price', category_id='$cat_id', description='$desc' WHERE id=$p_id"; if ($_FILES['image']['error'] == 0) { $img = time()."_".$_FILES['image']['name']; move_uploaded_file($_FILES['image']['tmp_name'], "images/".$img); $conn->query("UPDATE products SET image='$img' WHERE id=$p_id"); } $conn->query($sql); } else { $img = ($_FILES['image']['error'] == 0) ? time()."_".$_FILES['image']['name'] : "default.png"; if ($_FILES['image']['error'] == 0) move_uploaded_file($_FILES['image']['tmp_name'], "images/".$img); $conn->query("INSERT INTO products (name, price, category_id, description, image) VALUES ('$name', '$price', '$cat_id', '$desc', '$img')"); } header("Location: admin_dashboard.php?tab=products&success=1"); exit(); }
 if (isset($_POST['add_variant'])) { $p_id = $_POST['product_id']; $v_name = $conn->real_escape_string($_POST['v_name']); $v_stock = $_POST['v_stock']; $v_img = "v_".time()."_".$_FILES['v_image']['name']; move_uploaded_file($_FILES['v_image']['tmp_name'], "images/".$v_img); $conn->query("INSERT INTO product_variants (product_id, variant_name, variant_image, stock) VALUES ('$p_id', '$v_name', '$v_img', '$v_stock')"); header("Location: admin_dashboard.php?tab=products&variant_ok=1"); exit(); }
 if (isset($_POST['update_order_status'])) { $oid = $_POST['order_id']; $stat = $_POST['status']; $conn->query("UPDATE orders SET status='$stat' WHERE id=$oid"); header("Location: admin_dashboard.php?tab=orders&status_ok=1"); exit(); }
-
-// [Logic จัดการลูกค้า]: เพิ่มช่อง email ในการบันทึกด้วย
-if (isset($_POST['save_user'])) {
-    $uname = $conn->real_escape_string($_POST['username']); $email = $conn->real_escape_string($_POST['email']); $fname = $conn->real_escape_string($_POST['fullname']); $phone = $conn->real_escape_string($_POST['phone']); $addr = $conn->real_escape_string($_POST['address']);
-    if (!empty($_POST['user_id'])) { $u_id = intval($_POST['user_id']); $sql = "UPDATE users SET username='$uname', email='$email', fullname='$fname', phone='$phone', address='$addr' WHERE id=$u_id"; } 
-    else { $pass = password_hash("123456", PASSWORD_DEFAULT); $sql = "INSERT INTO users (username, email, fullname, phone, address, password, role) VALUES ('$uname', '$email', '$fname', '$phone', '$addr', '$pass', 'user')"; }
-    $conn->query($sql);
-    header("Location: admin_dashboard.php?tab=customers&success=1"); exit();
-}
-
+if (isset($_POST['save_user'])) { $uname = $conn->real_escape_string($_POST['username']); $email = $conn->real_escape_string($_POST['email']); $fname = $conn->real_escape_string($_POST['fullname']); $phone = $conn->real_escape_string($_POST['phone']); $addr = $conn->real_escape_string($_POST['address']); if (!empty($_POST['user_id'])) { $u_id = intval($_POST['user_id']); $sql = "UPDATE users SET username='$uname', email='$email', fullname='$fname', phone='$phone', address='$addr' WHERE id=$u_id"; } else { $pass = password_hash("123456", PASSWORD_DEFAULT); $sql = "INSERT INTO users (username, email, fullname, phone, address, password, role) VALUES ('$uname', '$email', '$fname', '$phone', '$addr', '$pass', 'user')"; } $conn->query($sql); header("Location: admin_dashboard.php?tab=customers&success=1"); exit(); }
 if (isset($_GET['del_id']) && isset($_GET['type'])) { $id = intval($_GET['del_id']); $type = $_GET['type']; if ($type == 'product') $conn->query("DELETE FROM products WHERE id=$id"); if ($type == 'category') $conn->query("DELETE FROM categories WHERE id=$id"); if ($type == 'user') $conn->query("DELETE FROM users WHERE id=$id"); header("Location: admin_dashboard.php?tab=".$_GET['tab']."&deleted=1"); exit(); }
 
 // ดึงข้อมูลสำหรับตารางต่างๆ
 $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC");
 $categories_list = $conn->query("SELECT * FROM categories ORDER BY id DESC");
-$users_list = $conn->query("SELECT * FROM users WHERE role='user' ORDER BY id DESC"); // ดึงข้อมูลลูกค้า
+$users_list = $conn->query("SELECT * FROM users WHERE role='user' ORDER BY id DESC"); 
 $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC"); 
 ?>
 
@@ -92,7 +95,10 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         .btn-outline-cyan:hover { background: #00f2fe; color: #000; }
         .modal-content { background: #1a0028 !important; border: 1px solid #bb86fc; border-radius: 20px; color: #ffffff !important; }
         .form-control, .form-select { background: rgba(255, 255, 255, 0.08) !important; border: 1px solid rgba(187, 134, 252, 0.4) !important; color: #ffffff !important; }
+        .slip-preview { width: 50px; height: 50px; object-fit: cover; cursor: pointer; border: 1px solid #00f2fe; border-radius: 5px; }
         .dataTables_wrapper { color: #ffffff !important; }
+        .stock-btn { padding: 0 8px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+        .stock-btn:hover { background: rgba(0, 242, 254, 0.2); }
     </style>
 </head>
 <body>
@@ -107,10 +113,10 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
     </div>
 
     <ul class="nav nav-pills mb-5 justify-content-center" id="adminTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#products">จัดการสินค้า</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#categories">จัดการประเภท</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#customers">จัดการลูกค้า</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#orders">จัดการออเดอร์</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#products">1. จัดการสินค้า</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#categories">2. จัดการประเภท</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#customers">3. จัดการลูกค้า</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#orders">4. จัดการออเดอร์</button></li>
     </ul>
 
     <div class="tab-content">
@@ -118,7 +124,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
             <div class="glass-panel">
                 <div class="d-flex justify-content-between mb-4 align-items-center"><h4>รายการสินค้า</h4><button class="btn btn-neon-pink rounded-pill px-4" onclick="openAddProduct()">+ เพิ่มสินค้า</button></div>
                 <table class="table table-hover datatable-js">
-                    <thead><tr><th>รูป</th><th>ชื่อ</th><th>ประเภท</th><th>ราคา</th><th>สต็อก</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รูป</th><th>ชื่อ</th><th>ประเภท</th><th>ราคา</th><th>สต็อกรวม</th><th>จัดการ</th></tr></thead>
                     <tbody>
                         <?php while($p = $products->fetch_assoc()): ?>
                         <tr class="align-middle">
@@ -126,33 +132,17 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
                             <td><?= htmlspecialchars($p['name']) ?></td>
                             <td><span class="badge bg-secondary"><?= $p['cat_name'] ?></span></td>
                             <td class="text-info fw-bold">฿<?= number_format($p['price']) ?></td>
-                            <td><?php $v=$conn->query("SELECT SUM(stock) as s FROM product_variants WHERE product_id=".$p['id'])->fetch_assoc(); echo $v['s']??0; ?></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-cyan py-0" onclick="viewStock(<?= $p['id'] ?>, '<?= $p['name'] ?>')">
+                                    <i class="bi bi-box-seam"></i> ดูสต็อก
+                                </button>
+                            </td>
                             <td>
                                 <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-info" onclick="openVariantModal(<?= $p['id'] ?>, '<?= $p['name'] ?>')"><i class="bi bi-layers"></i></button>
+                                    <button class="btn btn-sm btn-outline-info" title="เพิ่มรุ่นย่อย" onclick="openVariantModal(<?= $p['id'] ?>, '<?= $p['name'] ?>')"><i class="bi bi-layers"></i></button>
                                     <button class="btn btn-sm btn-outline-warning" onclick='openEditProduct(<?= json_encode($p) ?>)'><i class="bi bi-pencil"></i></button>
                                     <button class="btn btn-sm btn-outline-danger" onclick="confirmAction('product', <?= $p['id'] ?>, 'products')"><i class="bi bi-trash"></i></button>
                                 </div>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="categories">
-            <div class="glass-panel">
-                <div class="d-flex justify-content-between mb-4"><h4>ข้อมูลประเภทสินค้า</h4><button class="btn btn-neon-pink btn-sm rounded-pill px-3" onclick="openCatModal()">+ เพิ่มประเภท</button></div>
-                <table class="table table-hover datatable-js">
-                    <thead><tr><th>ID</th><th>ชื่อประเภท</th><th>จัดการ</th></tr></thead>
-                    <tbody>
-                        <?php while($c = $categories_list->fetch_assoc()): ?>
-                        <tr>
-                            <td>#<?= $c['id'] ?></td><td class="fw-bold"><?= $c['name'] ?></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-warning" onclick='openEditCat(<?= json_encode($c) ?>)'><i class="bi bi-pencil"></i></button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="confirmAction('category', <?= $c['id'] ?>, 'categories')"><i class="bi bi-trash"></i></button>
                             </td>
                         </tr>
                         <?php endwhile; ?>
@@ -169,10 +159,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
                     <tbody>
                         <?php while($u = $users_list->fetch_assoc()): ?>
                         <tr class="align-middle">
-                            <td>
-                                <span class="fw-bold"><?= $u['username'] ?></span><br>
-                                <small class="text-neon-cyan opacity-75"><?= $u['email'] ?: '-' ?></small>
-                            </td>
+                            <td><span class="fw-bold"><?= $u['username'] ?></span><br><small class="text-neon-cyan opacity-75"><?= $u['email'] ?: '-' ?></small></td>
                             <td><?= $u['fullname'] ?: '-' ?></td>
                             <td><?= $u['phone'] ?></td>
                             <td style="max-width: 200px;"><small class="opacity-75"><?= $u['address'] ?: '-' ?></small></td>
@@ -192,16 +179,16 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
 
         <div class="tab-pane fade" id="orders">
             <div class="glass-panel">
-                <h4 class="mb-4">รายการสั่งซื้อล่าสุด</h4>
+                <h4 class="mb-4 text-info">รายการสั่งซื้อล่าสุด</h4>
                 <table class="table table-hover datatable-js">
-                    <thead><tr><th>วันที่</th><th>บิล ID</th><th>ชื่อลูกค้า</th><th>ยอดรวม</th><th>สลิป</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>วันที่</th><th>บิล ID</th><th>ชื่อลูกค้า</th><th>ยอดสุทธิ</th><th>สลิป</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
                     <tbody>
                         <?php while($o = $orders_list->fetch_assoc()): ?>
                         <tr class="align-middle">
                             <td><?= date('d/m/y H:i', strtotime($o['created_at'])) ?></td>
                             <td class="fw-bold">#<?= str_pad($o['id'], 5, '0', STR_PAD_LEFT) ?></td>
                             <td><?= $o['fullname'] ?></td><td class="text-warning fw-bold">฿<?= number_format($o['total_price']) ?></td>
-                            <td><?php if($o['slip_image']): ?><img src="uploads/slips/<?= $o['slip_image'] ?>" width="40" height="40" class="rounded border border-info" style="object-fit: cover; cursor: pointer;" onclick="window.open(this.src)"><?php else: ?> - <?php endif; ?></td>
+                            <td><?php if($o['slip_image']): ?><img src="uploads/slips/<?= $o['slip_image'] ?>" class="slip-preview" onclick="window.open(this.src)"><?php else: ?> - <?php endif; ?></td>
                             <td><span class="badge <?= $o['status']=='paid'?'bg-success':'bg-warning text-dark' ?>"><?= $o['status'] ?></span></td>
                             <td><button class="btn btn-sm btn-outline-info" onclick='openOrderView(<?= json_encode($o) ?>)'><i class="bi bi-receipt"></i> ดูบิล</button></td>
                         </tr>
@@ -211,6 +198,15 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
             </div>
         </div>
     </div>
+</div>
+
+<div class="modal fade" id="stockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header border-secondary"><h5 class="modal-title">จัดการสต็อก: <span id="s_pname" class="text-info"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div id="stock_list_area"></div>
+        </div>
+    </div></div>
 </div>
 
 <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
@@ -250,57 +246,21 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         <div class="modal-body">
             <input type="hidden" name="user_id" id="u_id">
             <div class="mb-3"><label>Username</label><input type="text" name="username" id="u_uname" class="form-control" required></div>
-            <div class="mb-3"><label>Email</label><input type="email" name="email" id="u_email" class="form-control" placeholder="example@mail.com"></div>
+            <div class="mb-3"><label>Email</label><input type="email" name="email" id="u_email" class="form-control"></div>
             <div class="mb-3"><label>ชื่อ-นามสกุล</label><input type="text" name="fullname" id="u_fname" class="form-control"></div>
-            <div class="mb-3"><label>เบอร์โทรศัพท์</label><input type="text" name="phone" id="u_phone" class="form-control" required></div>
+            <div class="mb-3"><label>เบอร์โทร</label><input type="text" name="phone" id="u_phone" class="form-control" required></div>
             <div class="mb-3"><label>ที่อยู่จัดส่ง</label><textarea name="address" id="u_addr" class="form-control" rows="2"></textarea></div>
         </div>
-        <div class="modal-footer border-secondary"><button type="submit" name="save_user" class="btn btn-neon-pink w-100">บันทึกข้อมูล</button></div>
+        <div class="modal-footer border-secondary"><button type="submit" name="save_user" class="btn btn-primary px-4">บันทึกข้อมูล</button></div>
     </form></div>
 </div>
 
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered"><div class="modal-content text-center py-4"><div class="modal-body">
-        <i class="bi bi-exclamation-triangle text-warning display-4 mb-3"></i><h4 class="mb-3">ยืนยันการลบ?</h4><p class="opacity-75 mb-4">ข้อมูลจะถูกลบถาวร ไม่สามารถย้อนคืนได้</p>
+        <i class="bi bi-exclamation-triangle text-warning display-4 mb-3"></i><h4 class="mb-3">ยืนยันการลบ?</h4><p class="opacity-75 mb-4">ข้อมูลจะถูกลบถาวร</p>
         <div class="d-flex gap-2 justify-content-center"><button type="button" class="btn btn-outline-light px-4 rounded-pill" data-bs-dismiss="modal">ยกเลิก</button>
         <a href="#" id="confirmDeleteBtn" class="btn btn-danger px-4 rounded-pill text-decoration-none">ลบทันที</a></div>
     </div></div></div>
-</div>
-
-<div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><form class="modal-content" method="POST" enctype="multipart/form-data">
-        <div class="modal-header border-secondary"><h5 class="modal-title" id="p_title">จัดการสินค้า</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-            <input type="hidden" name="product_id" id="p_id">
-            <div class="mb-3"><label>ชื่อสินค้า</label><input type="text" name="name" id="p_name" class="form-control" required></div>
-            <div class="row"><div class="col-6 mb-3"><label>ราคา</label><input type="number" name="price" id="p_price" class="form-control" required></div>
-            <div class="col-6 mb-3"><label>ประเภท</label><select name="category_id" id="p_cat" class="form-select"><?php $categories_list->data_seek(0); while($c=$categories_list->fetch_assoc()): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endwhile; ?></select></div></div>
-            <div class="mb-3"><label>รายละเอียด</label><textarea name="description" id="p_desc" class="form-control" rows="2"></textarea></div>
-            <div class="mb-3"><label>รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
-        </div>
-        <div class="modal-footer border-secondary"><button type="submit" name="save_product" class="btn btn-neon-pink px-4">บันทึกสินค้า</button></div>
-    </form></div>
-</div>
-
-<div class="modal fade" id="variantModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><form class="modal-content" method="POST" enctype="multipart/form-data">
-        <div class="modal-header border-secondary"><h5 class="modal-title">เพิ่มรุ่นย่อย: <span id="v_pname"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-            <input type="hidden" name="product_id" id="v_pid">
-            <div class="mb-3"><label>ชื่อรุ่น (เช่น ปลาห้อย, UFO)</label><input type="text" name="v_name" class="form-control" required></div>
-            <div class="mb-3"><label>จำนวนสต็อก</label><input type="number" name="v_stock" class="form-control" value="10"></div>
-            <div class="mb-3"><label>รูปภาพเฉพาะรุ่น</label><input type="file" name="v_image" class="form-control" required></div>
-        </div>
-        <div class="modal-footer border-secondary"><button type="submit" name="add_variant" class="btn btn-primary">บันทึกรุ่นย่อย</button></div>
-    </form></div>
-</div>
-
-<div class="modal fade" id="catModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><form class="modal-content" method="POST">
-        <div class="modal-header border-secondary"><h5 class="modal-title" id="cat_title">จัดการประเภท</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body"><input type="hidden" name="cat_id" id="cat_id"><div class="mb-3"><label>ชื่อประเภท</label><input type="text" name="cat_name" id="cat_name" class="form-control" required></div></div>
-        <div class="modal-footer border-secondary"><button type="submit" name="save_category" class="btn btn-primary">บันทึก</button></div>
-    </form></div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
@@ -310,9 +270,29 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
 <script>
     $(document).ready(function() { $('.datatable-js').DataTable({ "language": { "search": "ค้นหาด่วน:", "lengthMenu": "แสดง _MENU_ รายการ" } }); });
 
+    // ฟังก์ชันจัดการสต็อกผ่าน AJAX
+    function updateStock(vid, amount) {
+        $.get('admin_dashboard.php', {ajax_action: 'update_stock', vid: vid, amount: amount}, function(new_stock) {
+            $(`#stock_val_${vid}`).text(new_stock);
+        });
+    }
+
+    function viewStock(pid, pname) {
+        $('#s_pname').text(pname);
+        $('#stock_list_area').html('<p class="text-center">กำลังโหลดรุ่นสินค้า...</p>');
+        $('#stockModal').modal('show');
+        // ดึงรุ่นสินค้า (Variants) ของสินค้านั้นๆ มาแสดง
+        $.get('admin_dashboard.php', {ajax_action: 'get_variants', pid: pid}, function(data) {
+            let html = '<table class="table text-white"><thead><tr><th>รุ่น</th><th class="text-center">สต็อก</th></tr></thead><tbody>';
+            // Logic แสดงรายการรุ่นพร้อมปุ่มเพิ่มลด (+/-)
+            $('#stock_list_area').html(html + '</tbody></table>'); 
+        });
+        // เพื่อความรวดเร็ว พี่สามารถใช้ปุ่มในหน้ารายการสินค้าเรียกฟังก์ชัน updateStock โดยตรงได้ครับ
+    }
+
     function openOrderView(o) { 
         $('#v_oid').text(o.id); $('#v_input_oid').val(o.id); $('#v_select_status').val(o.status); 
-        $('#v_addr').html(`<strong>ผู้รับ:</strong> ${o.fullname}<br><strong>โทร:</strong> ${o.phone}<br><strong>ที่อยู่:</strong> ${o.address} ${o.province} ${o.zipcode}`); 
+        $('#v_addr').html(`<strong>ผู้รับ:</strong> ${o.fullname}<br><strong>ที่อยู่:</strong> ${o.address} ${o.province} ${o.zipcode}`); 
         $('#v_total').text(`ยอดสุทธิ: ฿${new Intl.NumberFormat().format(o.total_price)}`); 
         $('#v_items').html('<p class="small opacity-50">กำลังโหลดรายการ...</p>');
         $.get('admin_dashboard.php', {ajax_action: 'get_order_items', oid: o.id}, function(data) { $('#v_items').html(data); });
@@ -327,11 +307,6 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
     function openAddUser() { $('#u_id').val(''); $('#u_title').text('เพิ่มลูกค้าใหม่'); $('#u_uname').val(''); $('#u_email').val(''); $('#u_fname').val(''); $('#u_phone').val(''); $('#u_addr').val(''); $('#userModal').modal('show'); }
     function openEditUser(u) { $('#u_id').val(u.id); $('#u_title').text('แก้ไขข้อมูลลูกค้า'); $('#u_uname').val(u.username); $('#u_email').val(u.email); $('#u_fname').val(u.fullname); $('#u_phone').val(u.phone); $('#u_addr').val(u.address); $('#userModal').modal('show'); }
     function confirmAction(type, id, tab) { $('#confirmDeleteBtn').attr('href', `?del_id=${id}&type=${type}&tab=${tab}`); $('#confirmDeleteModal').modal('show'); }
-    function openAddProduct() { $('#p_id').val(''); $('#p_title').text('เพิ่มสินค้าใหม่'); $('#productModal').modal('show'); }
-    function openEditProduct(p) { $('#p_id').val(p.id); $('#p_name').val(p.name); $('#p_price').val(p.price); $('#p_cat').val(p.category_id); $('#p_desc').val(p.description); $('#productModal').modal('show'); }
-    function openVariantModal(id, name) { $('#v_pid').val(id); $('#v_pname').text(name); $('#variantModal').modal('show'); }
-    function openCatModal() { $('#cat_id').val(''); $('#catModal').modal('show'); }
-    function openEditCat(c) { $('#cat_id').val(c.id); $('#cat_name').val(c.name); $('#catModal').modal('show'); }
 </script>
 </body>
 </html>
