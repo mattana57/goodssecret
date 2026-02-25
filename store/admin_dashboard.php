@@ -152,7 +152,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
             <div class="glass-panel">
                 <div class="d-flex justify-content-between mb-4 align-items-center"><h4>รายการสินค้า</h4><button class="btn btn-neon-pink rounded-pill px-4" onclick="openAddProduct()">+ เพิ่มสินค้า</button></div>
                 <table class="table table-hover datatable-js w-100">
-                    <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก (พิมพ์เลขเพื่อแก้)</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก</th><th>จัดการ</th></tr></thead>
                     <tbody>
                         <?php while($p = $products->fetch_assoc()): 
                             $v_q = $conn->query("SELECT * FROM product_variants WHERE product_id=".$p['id']);
