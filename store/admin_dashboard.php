@@ -141,10 +141,10 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
     </div>
 
     <ul class="nav nav-pills mb-5 justify-content-center" id="adminTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#products">1. สินค้า & สต็อก</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#categories">2. จัดการประเภท</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#customers">3. จัดการลูกค้า</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#orders">4. จัดการออเดอร์</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#products">สินค้า & สต็อก</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#categories">จัดการประเภท</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#customers">จัดการลูกค้า</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#orders">จัดการออเดอร์</button></li>
     </ul>
 
     <div class="tab-content">
@@ -165,7 +165,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
                             <td>
                                 <?php if (!$has_variants): ?>
                                 <div class="mb-1 d-flex justify-content-between align-items-center border-bottom border-secondary pb-1">
-                                    <small>หลัก:</small>
+                                    <small>จำนวน:</small>
                                     <input type="number" class="form-control form-control-sm stock-input" value="<?= $p['stock'] ?>" onchange="manualUpdateStockDirect(<?= $p['id'] ?>, this.value)">
                                 </div>
                                 <?php endif; ?>
