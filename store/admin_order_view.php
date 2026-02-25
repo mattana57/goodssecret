@@ -9,7 +9,19 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 
 $order_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-// ดึงข้อมูลออเดอร์ ลูกค้า และข้อมูลการจัดส่งแบบละเอียด
+// --- [Logic สำคัญ]: บันทึกการอัปเดตสถานะ ---
+if (isset($_POST['update_status'])) {
+    $new_status = $conn->real_escape_string($_POST['status']);
+    $cancel_reason = $conn->real_escape_string($_POST['cancel_reason'] ?? '');
+    
+    // บันทึกลงฐานข้อมูล
+    $sql_update = "UPDATE orders SET status = '$new_status', cancel_reason = '$cancel_reason' WHERE id = $order_id";
+    if ($conn->query($sql_update)) {
+        header("Location: admin_order_view.php?id=$order_id&save=success"); exit();
+    }
+}
+
+// ดึงข้อมูลออเดอร์และลูกค้าแบบละเอียด
 $order_q = $conn->query("SELECT o.*, u.email FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = $order_id");
 $order = $order_q->fetch_assoc();
 
@@ -20,16 +32,6 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name FROM orde
                          JOIN products p ON od.product_id = p.id 
                          LEFT JOIN product_variants pv ON od.variant_id = pv.id 
                          WHERE od.order_id = $order_id");
-
-// จัดการการเปลี่ยนสถานะโดยแอดมิน
-if (isset($_POST['update_status'])) {
-    $new_status = $_POST['status'];
-    $cancel_reason = $conn->real_escape_string($_POST['cancel_reason'] ?? '');
-    
-    // อัปเดตสถานะและเหตุผลการยกเลิก
-    $conn->query("UPDATE orders SET status = '$new_status', cancel_reason = '$cancel_reason' WHERE id = $order_id");
-    header("Location: admin_order_view.php?id=$order_id&success=1"); exit();
-}
 ?>
 
 <!DOCTYPE html>
@@ -85,7 +87,7 @@ if (isset($_POST['update_status'])) {
 
         <div class="col-md-8">
             <div class="glass-card mb-4">
-                <h5 class="text-info border-bottom border-secondary pb-2 mb-3"><i class="bi bi-cart"></i> สินค้าในบิลนี้</h5>
+                <h5 class="text-info border-bottom border-secondary pb-2 mb-3"><i class="bi bi-cart"></i> รายการสินค้า</h5>
                 <div class="table-responsive">
                     <table class="table table-dark table-hover">
                         <thead><tr class="text-secondary small"><th>รูป</th><th>สินค้า</th><th>รุ่น</th><th class="text-center">จำนวน</th><th class="text-end">รวม</th></tr></thead>
@@ -108,25 +110,25 @@ if (isset($_POST['update_status'])) {
             </div>
 
             <div class="glass-card bg-black border-neon-cyan">
-                <h5 class="text-neon-cyan mb-4"><i class="bi bi-gear-fill"></i> จัดการสถานะออเดอร์</h5>
+                <h5 class="text-neon-cyan mb-4"><i class="bi bi-gear-fill"></i> ปรับปรุงสถานะคำสั่งซื้อ</h5>
                 <form method="POST">
                     <div class="row g-3 align-items-end">
                         <div class="col-md-6">
                             <label class="small opacity-75">เปลี่ยนสถานะเป็น:</label>
-                            <select name="status" class="form-select bg-dark text-white border-secondary mt-1" onchange="toggleCancelBox(this.value)">
-                                <option value="pending" <?= $order['status']=='pending'?'selected':'' ?>>รอตรวจสอบ</option>
-                                <option value="processing" <?= $order['status']=='processing'?'selected':'' ?>>ตรวจสอบคำสั่งซื้อสำเร็จ</option>
-                                <option value="shipped" <?= $order['status']=='shipped'?'selected':'' ?>>จัดส่งสินค้าสำเร็จ</option>
-                                <option value="delivered" <?= $order['status']=='delivered'?'selected':'' ?>>จัดส่งสำเร็จ</option>
-                                <option value="cancelled" <?= $order['status']=='cancelled'?'selected':'' ?>>ยกเลิกคำสั่งซื้อ</option>
+                            <select name="status" id="statusSelect" class="form-select bg-dark text-white border-secondary mt-1" onchange="toggleCancelBox(this.value)">
+                                <option value="pending" <?= ($order['status'] == 'pending') ? 'selected' : '' ?>>รอตรวจสอบ</option>
+                                <option value="processing" <?= ($order['status'] == 'processing') ? 'selected' : '' ?>>ตรวจสอบคำสั่งซื้อสำเร็จ</option>
+                                <option value="shipped" <?= ($order['status'] == 'shipped') ? 'selected' : '' ?>>จัดส่งสินค้าสำเร็จ</option>
+                                <option value="delivered" <?= ($order['status'] == 'delivered') ? 'selected' : '' ?>>จัดส่งสำเร็จ</option>
+                                <option value="cancelled" <?= ($order['status'] == 'cancelled') ? 'selected' : '' ?>>ยกเลิกคำสั่งซื้อ</option>
                             </select>
                         </div>
-                        <div class="col-md-6" id="cancelBox" style="display: <?= $order['status'] == 'cancelled' ? 'block' : 'none' ?>;">
+                        <div class="col-md-6" id="cancelBox" style="display: <?= ($order['status'] == 'cancelled') ? 'block' : 'none' ?>;">
                             <label class="small text-danger">เหตุผลการยกเลิก:</label>
-                            <input type="text" name="cancel_reason" class="form-control bg-dark text-white border-danger mt-1" value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>" placeholder="แจ้งเหตุผลให้ลูกค้าทราบ...">
+                            <input type="text" name="cancel_reason" class="form-control bg-dark text-white border-danger mt-1" value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>" placeholder="ระบุเหตุผลเพื่อให้ลูกค้าทราบ...">
                         </div>
                         <div class="col-12 mt-4 text-end">
-                            <button type="submit" name="update_status" class="btn btn-success rounded-pill px-5 py-2 fw-bold shadow-lg">บันทึกการอัปเดต</button>
+                            <button type="submit" name="update_status" class="btn btn-success px-5 rounded-pill fw-bold shadow-lg">บันทึกการอัปเดตข้อมูล</button>
                         </div>
                     </div>
                 </form>
