@@ -30,102 +30,80 @@ if (isset($_POST['update_status'])) {
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>รายละเอียดบิล #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></title>
+    <title>จัดการบิล #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
         body { background: #0c001c; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
-        .order-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(187, 134, 252, 0.2); border-radius: 20px; padding: 25px; }
-        .status-badge { padding: 8px 16px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; }
-        .pending { background: #ffc107; color: #000; } .processing { background: #17a2b8; color: #fff; }
-        .shipped { background: #0d6efd; color: #fff; } .delivered { background: #198754; color: #fff; }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(187, 134, 252, 0.2); border-radius: 20px; padding: 25px; }
+        .status-badge { padding: 8px 16px; border-radius: 50px; font-weight: bold; }
+        .pending { background: #ffc107; color: #000; }
+        .processing { background: #17a2b8; color: #fff; }
+        .shipped { background: #0d6efd; color: #fff; }
+        .delivered { background: #198754; color: #fff; }
         .cancelled { background: #dc3545; color: #fff; }
         .text-neon-pink { color: #f107a3; text-shadow: 0 0 10px rgba(241, 7, 163, 0.5); }
     </style>
 </head>
 <body>
 <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between mb-4">
         <a href="admin_dashboard.php?tab=orders" class="btn btn-outline-light rounded-pill"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก</a>
-        <h2 class="text-neon-pink mb-0">รายละเอียดคำสั่งซื้อ #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></h2>
+        <h2 class="text-neon-pink">รายละเอียดคำสั่งซื้อ #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></h2>
     </div>
 
     <div class="row g-4">
         <div class="col-md-4">
-            <div class="order-card h-100">
-                <h5 class="text-info border-bottom border-secondary pb-2"><i class="bi bi-person-circle"></i> ข้อมูลลูกค้า</h5>
-                <p class="mb-1"><strong>ชื่อ:</strong> <?= $order['fullname'] ?></p>
-                <p class="mb-1"><strong>อีเมล:</strong> <?= $order['email'] ?></p>
-                <p class="mb-1"><strong>เบอร์โทร:</strong> <?= $order['phone'] ?></p>
-                <hr class="border-secondary">
-                <h5 class="text-info pb-2"><i class="bi bi-geo-alt-fill"></i> ที่อยู่จัดส่ง</h5>
-                <p class="small opacity-75"><?= nl2br($order['address']) ?></p>
+            <div class="glass-card">
+                <h5 class="text-info border-bottom border-secondary pb-2"><i class="bi bi-person-vcard"></i> ข้อมูลลูกค้า</h5>
+                <p><strong>ชื่อ:</strong> <?= $order['fullname'] ?></p>
+                <p><strong>เบอร์โทร:</strong> <?= $order['phone'] ?></p>
+                <p><strong>ที่อยู่:</strong> <?= nl2br($order['address']) ?></p>
             </div>
         </div>
 
         <div class="col-md-8">
-            <div class="order-card h-100">
-                <h5 class="text-info border-bottom border-secondary pb-2"><i class="bi bi-cart-fill"></i> รายการสินค้า</h5>
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover">
-                        <thead>
-                            <tr class="text-secondary"><th>สินค้า</th><th class="text-center">รุ่น</th><th class="text-center">จำนวน</th><th class="text-end">ราคา</th></tr>
-                        </thead>
-                        <tbody>
-                            <?php while($item = $items_q->fetch_assoc()): ?>
-                            <tr class="align-middle">
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <img src="images/<?= $item['image'] ?>" width="40" class="rounded me-2">
-                                        <span><?= $item['name'] ?></span>
-                                    </div>
-                                </td>
-                                <td class="text-center text-info"><?= $item['variant_name'] ?: '-' ?></td>
-                                <td class="text-center"><?= $item['quantity'] ?></td>
-                                <td class="text-end text-neon-pink">฿<?= number_format($item['price'] * $item['quantity']) ?></td>
-                            </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="3" class="text-end fw-bold">ยอดรวมสุทธิ:</td>
-                                <td class="text-end h4 text-neon-pink">฿<?= number_format($order['total_price']) ?></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
+            <div class="glass-card">
+                <h5 class="text-info border-bottom border-secondary pb-2"><i class="bi bi-box-seam"></i> รายการสินค้า</h5>
+                <table class="table table-dark">
+                    <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>รุ่น</th><th class="text-center">จำนวน</th><th class="text-end">ราคา</th></tr></thead>
+                    <tbody>
+                        <?php while($item = $items_q->fetch_assoc()): ?>
+                        <tr class="align-middle">
+                            <td><img src="images/<?= $item['image'] ?>" width="40" class="rounded"></td>
+                            <td><?= $item['name'] ?></td>
+                            <td><small class="text-secondary"><?= $item['variant_name'] ?: 'ทั่วไป' ?></small></td>
+                            <td class="text-center"><?= $item['quantity'] ?></td>
+                            <td class="text-end">฿<?= number_format($item['price'] * $item['quantity']) ?></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr><td colspan="4" class="text-end fw-bold">ยอดรวมทั้งหมด:</td><td class="text-end h4 text-neon-pink">฿<?= number_format($order['total_price']) ?></td></tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
 
         <div class="col-12">
-            <div class="order-card bg-dark">
-                <div class="row align-items-center">
+            <div class="glass-card bg-black border-info">
+                <form method="POST" class="row align-items-center">
                     <div class="col-md-6">
-                        <h5 class="text-info mb-0">สถานะปัจจุบัน: 
-                            <span class="status-badge <?= $order['status'] ?>">
-                                <?php 
-                                    if($order['status'] == 'pending') echo '<i class="bi bi-clock"></i> รอตรวจสอบ';
-                                    if($order['status'] == 'processing') echo '<i class="bi bi-box-seam"></i> กำลังแพ็คของ';
-                                    if($order['status'] == 'shipped') echo '<i class="bi bi-truck"></i> จัดส่งสินค้าแล้ว';
-                                    if($order['status'] == 'delivered') echo '<i class="bi bi-check-circle-fill"></i> จัดส่งสำเร็จ';
-                                    if($order['status'] == 'cancelled') echo '<i class="bi bi-x-circle"></i> ยกเลิก';
-                                ?>
-                            </span>
-                        </h5>
+                        <h5 class="mb-0">สถานะ: <span class="status-badge <?= $order['status'] ?>"><?= strtoupper($order['status']) ?></span></h5>
                     </div>
-                    <div class="col-md-6">
-                        <form method="POST" class="d-flex gap-2">
-                            <select name="status" class="form-select bg-black text-white border-secondary">
-                                <option value="pending" <?= $order['status']=='pending'?'selected':'' ?>>รอตรวจสอบ</option>
-                                <option value="processing" <?= $order['status']=='processing'?'selected':'' ?>>กำลังแพ็คของ</option>
-                                <option value="shipped" <?= $order['status']=='shipped'?'selected':'' ?>>จัดส่งสินค้าแล้ว</option>
-                                <option value="delivered" <?= $order['status']=='delivered'?'selected':'' ?>>จัดส่งสำเร็จ</option>
-                                <option value="cancelled" <?= $order['status']=='cancelled'?'selected':'' ?>>ยกเลิก</option>
-                            </select>
-                            <button type="submit" name="update_status" class="btn btn-success px-4">บันทึกการเปลี่ยนสถานะ</button>
-                        </form>
+                    <div class="col-md-4">
+                        <select name="status" class="form-select">
+                            <option value="pending" <?= $order['status']=='pending'?'selected':'' ?>>รอตรวจสอบ</option>
+                            <option value="processing" <?= $order['status']=='processing'?'selected':'' ?>>กำลังแพ็คของ</option>
+                            <option value="shipped" <?= $order['status']=='shipped'?'selected':'' ?>>จัดส่งแล้ว</option>
+                            <option value="delivered" <?= $order['status']=='delivered'?'selected':'' ?>>จัดส่งสำเร็จ</option>
+                            <option value="cancelled" <?= $order['status']=='cancelled'?'selected':'' ?>>ยกเลิก</option>
+                        </select>
                     </div>
-                </div>
+                    <div class="col-md-2">
+                        <button type="submit" name="update_status" class="btn btn-success w-100">บันทึก</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

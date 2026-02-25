@@ -213,8 +213,8 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
             <div class="glass-panel">
                 <h4>รายการออเดอร์ล่าสุด</h4>
                 <table class="table table-hover datatable-js w-100">
-                    <thead><tr><th>วันที่</th><th>บิล ID</th><th>ลูกค้า</th><th>ยอดรวม</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
-                    <tbody><?php while($o = $orders_list->fetch_assoc()): ?><tr><td><?= date('d/m/y H:i', strtotime($o['created_at'])) ?></td><td class="fw-bold text-info">#<?= str_pad($o['id'], 5, '0', STR_PAD_LEFT) ?></td><td><?= $o['fullname'] ?></td><td class="text-warning">฿<?= number_format($o['total_price']) ?></td><td><span class="badge <?= $o['status']=='paid'?'bg-success':'bg-warning' ?>"><?= $o['status'] ?></span></td><td><button class="btn btn-sm btn-outline-info" onclick='openOrderView(<?= json_encode($o) ?>)'><i class="bi bi-receipt"></i> ดูบิล</button></td></tr><?php endwhile; ?></tbody>
+                    <thead><tr><th>วันที่</th><th>บิล ID</th><th>ลูกค้า</th><th>ยอดรวม</th><th>สถานะ</th><th>จัดการ</th></tr></thead><td><a href="admin_order_view.php?id=<?= $o['id'] ?>" class="btn btn-sm btn-outline-info rounded-pill px-3"><i class="bi bi-receipt"></i> จัดการบิล</a></td>
+                    <tbody><?php while($o = $orders_list->fetch_assoc()): ?><tr><td><?= date('d/m/y H:i', strtotime($o['created_at'])) ?></td><td class="fw-bold text-info">#<?= str_pad($o['id'], 5, '0', STR_PAD_LEFT) ?></td><td><?= $o['fullname'] ?></td><td class="text-warning">฿<?= number_format($o['total_price']) ?></td><td><span class="badge <?= $o['status']=='paid'?'bg-success':'bg-warning' ?>"><?= $o['status'] ?></span></td></tr><?php endwhile; ?></tbody>
                 </table>
             </div>
         </div>
