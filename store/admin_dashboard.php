@@ -154,7 +154,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
     <div class="d-flex justify-content-between align-items-center mb-5">
         <h2 class="fw-bold text-neon-pink"><i class="bi bi-shield-lock-fill me-2"></i> ADMIN DASHBOARD</h2>
         <div class="d-flex gap-2">
-            <a href="index.php" class="btn btn-outline-info rounded-pill px-4 text-decoration-none">ดูหน้าร้าน</a>
+            <!--<a href="index.php" class="btn btn-outline-info rounded-pill px-4 text-decoration-none">ดูหน้าร้าน</a>-->
             <a href="logout.php" class="btn btn-danger rounded-pill px-4 text-decoration-none">ออกจากระบบ</a>
         </div>
     </div>
