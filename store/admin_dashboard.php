@@ -56,7 +56,7 @@ if (isset($_POST['save_product'])) {
     $img_sql = "";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = time() . "_" . $_FILES['image']['name'];
-        if (move_uploaded_file($_FILES['image']['tmp_name'], "store/images/" . $img_name)) {
+        if (move_uploaded_file($_FILES['image']['tmp_name'], "images/" . $img_name)) {
             $img_sql = ", image='$img_name'";
         }
     }
@@ -152,7 +152,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
                             $has_variants = ($v_q->num_rows > 0);
                         ?>
                         <tr class="align-middle">
-                            <td><img src="store/images/<?= $p['image'] ?>" class="product-img" onerror="this.src='store/images/default.png'"></td>
+                            <td><img src="images/<?= $p['image'] ?>" class="product-img" onerror="this.src='images/default.png'"></td>
                             <td><?= htmlspecialchars($p['name']) ?></td>
                             <td class="text-info fw-bold">฿<?= number_format($p['price']) ?></td>
                             <td>
