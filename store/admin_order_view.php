@@ -114,15 +114,15 @@ if (isset($_POST['update_status'])) {
                         <div class="col-md-6">
                             <label class="small opacity-75">เปลี่ยนสถานะเป็น:</label>
                             <select name="status" class="form-select bg-dark text-white border-secondary mt-1" onchange="toggleCancelBox(this.value)">
-                                <option value="pending" <?= $order['status']=='pending'?'selected':'' ?>>รอตรวจสอบ (ลูกค้าเห็น: รอตรวจสอบ)</option>
-                                <option value="processing" <?= $order['status']=='processing'?'selected':'' ?>>ตรวจสอบคำสั่งซื้อสำเร็จ (ลูกค้าเห็น: กำลังจัดส่ง)</option>
-                                <option value="shipped" <?= $order['status']=='shipped'?'selected':'' ?>>จัดส่งสินค้าสำเร็จ (ลูกค้าได้รับปุ่มยืนยัน)</option>
-                                <option value="delivered" <?= $order['status']=='delivered'?'selected':'' ?>>จัดส่งสำเร็จ (ออเดอร์สมบูรณ์)</option>
+                                <option value="pending" <?= $order['status']=='pending'?'selected':'' ?>>รอตรวจสอบ</option>
+                                <option value="processing" <?= $order['status']=='processing'?'selected':'' ?>>ตรวจสอบคำสั่งซื้อสำเร็จ</option>
+                                <option value="shipped" <?= $order['status']=='shipped'?'selected':'' ?>>จัดส่งสินค้าสำเร็จ</option>
+                                <option value="delivered" <?= $order['status']=='delivered'?'selected':'' ?>>จัดส่งสำเร็จ</option>
                                 <option value="cancelled" <?= $order['status']=='cancelled'?'selected':'' ?>>ยกเลิกคำสั่งซื้อ</option>
                             </select>
                         </div>
                         <div class="col-md-6" id="cancelBox" style="display: <?= $order['status'] == 'cancelled' ? 'block' : 'none' ?>;">
-                            <label class="small text-danger">เหตุผลการยกเลิก (ลูกค้าจะเห็นข้อความนี้):</label>
+                            <label class="small text-danger">เหตุผลการยกเลิก:</label>
                             <input type="text" name="cancel_reason" class="form-control bg-dark text-white border-danger mt-1" value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>" placeholder="แจ้งเหตุผลให้ลูกค้าทราบ...">
                         </div>
                         <div class="col-12 mt-4 text-end">
