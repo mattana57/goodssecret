@@ -56,7 +56,7 @@ if (isset($_POST['save_product'])) {
     $img_sql = "";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = time() . "_" . $_FILES['image']['name'];
-        if (move_uploaded_file($_FILES['image']['tmp_name'], "images/" . $img_name)) {
+        if (move_uploaded_file($_FILES['image']['tmp_name'], "store/images/" . $img_name)) {
             $img_sql = ", image='$img_name'";
         }
     }
@@ -134,10 +134,10 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
     </div>
 
     <ul class="nav nav-pills mb-5 justify-content-center" id="adminTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#products">1. สินค้า & สต็อก</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#categories">2. จัดการประเภท</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#customers">3. จัดการลูกค้า</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#orders">4. จัดการออเดอร์</button></li>
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#products">สินค้า & สต็อก</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#categories">จัดการประเภท</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#customers">จัดการลูกค้า</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#orders">จัดการออเดอร์</button></li>
     </ul>
 
     <div class="tab-content">
@@ -145,14 +145,14 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
             <div class="glass-panel">
                 <div class="d-flex justify-content-between mb-4 align-items-center"><h4>รายการสินค้า</h4><button class="btn btn-neon-pink rounded-pill px-4" onclick="openAddProduct()">+ เพิ่มสินค้า</button></div>
                 <table class="table table-hover datatable-js w-100">
-                    <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก (พิมพ์เลขเพื่อแก้)</th><th>จัดการ</th></tr></thead>
+                    <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก</th><th>จัดการ</th></tr></thead>
                     <tbody>
                         <?php while($p = $products->fetch_assoc()): 
                             $v_q = $conn->query("SELECT * FROM product_variants WHERE product_id=".$p['id']);
                             $has_variants = ($v_q->num_rows > 0);
                         ?>
                         <tr class="align-middle">
-                            <td><img src="images/<?= $p['image'] ?>" class="product-img" onerror="this.src='images/default.png'"></td>
+                            <td><img src="store/images/<?= $p['image'] ?>" class="product-img" onerror="this.src='store/images/default.png'"></td>
                             <td><?= htmlspecialchars($p['name']) ?></td>
                             <td class="text-info fw-bold">฿<?= number_format($p['price']) ?></td>
                             <td>
