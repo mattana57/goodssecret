@@ -158,7 +158,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
                             <td>
                                 <?php if (!$has_variants): ?>
                                 <div class="mb-1 d-flex justify-content-between align-items-center border-bottom border-secondary pb-1">
-                                    <small>หลัก:</small>
+                                    <small>จำนวน:</small>
                                     <input type="number" class="form-control form-control-sm stock-input" value="<?= $p['stock'] ?>" onchange="manualUpdateStockDirect(<?= $p['id'] ?>, this.value)">
                                 </div>
                                 <?php endif; ?>
