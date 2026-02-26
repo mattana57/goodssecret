@@ -6,6 +6,23 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.php"); exit();
 }
 
+// --- [จุดที่เพิ่ม]: Logic การลบข้อมูล (Delete) เพื่อให้ปุ่มลบใช้งานได้จริง ---
+if (isset($_GET['del_id']) && isset($_GET['type'])) {
+    $id = intval($_GET['del_id']);
+    $type = $_GET['type'];
+    
+    if ($type == 'product') {
+        // ลบรุ่นย่อยออกก่อนเพื่อไม่ให้ติด Foreign Key
+        $conn->query("DELETE FROM product_variants WHERE product_id=$id");
+        // แล้วค่อยลบสินค้าหลัก
+        $conn->query("DELETE FROM products WHERE id=$id");
+    }
+    // เพิ่มเงื่อนไขลบ Category หรือ User ได้ที่นี่ถ้าต้องการ
+    
+    header("Location: admin_dashboard.php?tab=".$_GET['tab']."&deleted=1"); 
+    exit();
+}
+
 $tab = isset($_GET['tab']) ? $_GET['tab'] : 'products';
 
 // --- ส่วน AJAX สำหรับดึงประวัติลูกค้าและอัปเดตสต็อกด่วน ---
@@ -23,7 +40,7 @@ if (isset($_GET['ajax_action'])) {
     if ($_GET['ajax_action'] == 'get_user_history') {
         $uid = intval($_GET['uid']);
         $q = $conn->query("SELECT * FROM orders WHERE user_id = $uid ORDER BY created_at DESC");
-        $html = '<table class="table table-hover small text-white"><thead><tr class="text-info"><th>บิล ID</th><th>วันที่</th><th>ยอดรวม</th><th>สถานะ</th></tr></thead><tbody>';
+        $html = '<table class="table table-hover small text-white"><thead><tr class="text-info"><th>บิล ID</th><th>วันที่</th><th>ยอดรวม</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>';
         while($r = $q->fetch_assoc()) {
             $html .= "<tr><td>#".str_pad($r['id'],5,'0',STR_PAD_LEFT)."</td><td>".date('d/m/y', strtotime($r['created_at']))."</td><td class='text-neon-cyan'>฿".number_format($r['total_price'])."</td><td>{$r['status']}</td></tr>";
         }
@@ -100,7 +117,6 @@ if (isset($_GET['ajax_action'])) {
         $('.datatable-js').DataTable({ "language": { "search": "ค้นหา:", "lengthMenu": "แสดง _MENU_ รายการ" } }); 
     });
 
-    // --- รวมฟังก์ชัน Javascript ทั้งหมดไว้ที่นี่เพื่อให้ทุกปุ่มกดได้ ---
     function viewUserHistory(uid, uname) { 
         $('#h_uname').text(uname); $('#historyModal').modal('show'); 
         $('#h_content').html('<div class="text-center py-5"><div class="spinner-border text-info"></div></div>');
@@ -110,6 +126,7 @@ if (isset($_GET['ajax_action'])) {
     function manualUpdateStockDirect(pid, val) { $.get('admin_dashboard.php', {ajax_action: 'update_stock_direct', pid: pid, val: val}); }
     function manualUpdateStockVariant(vid, val) { $.get('admin_dashboard.php', {ajax_action: 'update_stock_value', vid: vid, val: val}); }
     
+    // ฟังก์ชันช่วยสำหรับการแสดงผล Modal ในไฟล์ย่อย
     function toggleVariantFields(val) { $('#v_box').toggle(val === 'yes'); $('#no_v').toggle(val === 'no'); }
 </script>
 </body>
