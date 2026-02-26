@@ -1,5 +1,5 @@
 <?php
-// Logic การบันทึกสินค้า (ห้ามยุ่งส่วนอื่นเด็ดขาด)
+// --- Logic การบันทึกสินค้า (ห้ามยุ่งส่วนอื่นเด็ดขาด) ---
 if (isset($_POST['save_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
     $cat_id = $_POST['category_id'];
@@ -37,42 +37,44 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 <div class="glass-panel">
     <div class="d-flex justify-content-between mb-4 align-items-center">
         <h4 class="text-white fw-bold"><i class="bi bi-box-seam me-2"></i> สินค้า & สต็อก</h4>
-        <button type="button" class="btn btn-neon-pink rounded-pill px-4 shadow" data-bs-toggle="modal" data-bs-target="#pModal">+ เพิ่มสินค้าใหม่</button>
+        <button type="button" class="btn btn-neon-pink rounded-pill px-4 shadow" data-bs-toggle="modal" data-bs-target="#pModalMain">+ เพิ่มสินค้าใหม่</button>
     </div>
     
-    <table class="table table-hover datatable-js w-100">
-        <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก (รุ่นย่อย)</th><th>จัดการ</th></tr></thead>
-        <tbody>
-            <?php while($p = $products->fetch_assoc()): 
-                $v_q = $conn->query("SELECT * FROM product_variants WHERE product_id=".$p['id']);
-            ?>
-            <tr class="align-middle">
-                <td><img src="images/<?= $p['image'] ?>" width="55" height="55" style="object-fit:cover; border-radius:12px; border: 2px solid rgba(0, 242, 254, 0.3);"></td>
-                <td class="fw-bold text-white fs-5"><?= htmlspecialchars($p['name']) ?></td>
-                <td class="text-neon-cyan fw-bold fs-5">฿<?= number_format($p['price']) ?></td>
-                <td>
-                    <?php if($v_q->num_rows == 0): ?>
-                        <span class="badge bg-secondary px-3 fs-6"><?= $p['stock'] ?> ชิ้น</span>
-                    <?php else: while($v = $v_q->fetch_assoc()): ?>
-                        <div class="d-flex justify-content-between border-bottom border-white border-opacity-10 mb-1 pb-1">
-                            <span class="text-white"><?= $v['variant_name'] ?>:</span>
-                            <span class="text-neon-cyan fw-bold fs-6 ms-4"><?= $v['stock'] ?></span>
+    <div class="table-responsive">
+        <table class="table table-hover w-100">
+            <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก (รุ่นย่อย)</th><th>จัดการ</th></tr></thead>
+            <tbody>
+                <?php while($p = $products->fetch_assoc()): 
+                    $v_q = $conn->query("SELECT * FROM product_variants WHERE product_id=".$p['id']);
+                ?>
+                <tr class="align-middle">
+                    <td><img src="images/<?= $p['image'] ?>" width="55" height="55" style="object-fit:cover; border-radius:12px; border: 2px solid rgba(0, 242, 254, 0.3);"></td>
+                    <td class="fw-bold text-white fs-5"><?= htmlspecialchars($p['name']) ?></td>
+                    <td class="text-neon-cyan fw-bold fs-5">฿<?= number_format($p['price']) ?></td>
+                    <td>
+                        <?php if($v_q->num_rows == 0): ?>
+                            <span class="badge bg-secondary px-3 fs-6"><?= $p['stock'] ?> ชิ้น</span>
+                        <?php else: while($v = $v_q->fetch_assoc()): ?>
+                            <div class="d-flex justify-content-between border-bottom border-white border-opacity-10 mb-1 pb-1">
+                                <span class="text-white"><?= $v['variant_name'] ?>:</span>
+                                <span class="text-neon-cyan fw-bold fs-6 ms-4"><?= $v['stock'] ?></span>
+                            </div>
+                        <?php endwhile; endif; ?>
+                    </td>
+                    <td>
+                        <div class="btn-group shadow-sm">
+                            <button type="button" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="return confirm('ยืนยันการลบ?')"><i class="bi bi-trash"></i></button>
                         </div>
-                    <?php endwhile; endif; ?>
-                </td>
-                <td>
-                    <div class="btn-group shadow-sm">
-                        <button type="button" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </div>
-                </td>
-            </tr>
-            <?php endwhile; ?>
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<div class="modal fade" id="pModal" tabindex="-1" aria-labelledby="pModalLabel" aria-hidden="true">
+<div class="modal fade" id="pModalMain" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" style="background: #1a0028; border: 2px solid #bb86fc; color: #ffffff;" method="POST" enctype="multipart/form-data">
             <div class="modal-header border-secondary">
@@ -81,10 +83,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="small fw-bold mb-1">ชื่อสินค้า</label>
-                        <input type="text" name="name" class="form-control text-white" required>
-                    </div>
+                    <div class="col-md-6"><label class="small fw-bold mb-1">ชื่อสินค้า</label><input type="text" name="name" class="form-control text-white" required></div>
                     <div class="col-md-3">
                         <label class="small fw-bold mb-1">ประเภท</label>
                         <select name="category_id" class="form-select text-white">
@@ -93,12 +92,12 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                     </div>
                     <div class="col-md-3">
                         <label class="small fw-bold mb-1">มีรุ่นย่อย?</label>
-                        <select name="is_variant" id="variantSelect" class="form-select text-white" onchange="checkVariantStatus(this.value)">
+                        <select name="is_variant" id="isVariantSelect" class="form-select text-white" onchange="toggleVariantUI(this.value)">
                             <option value="no">ไม่มี</option><option value="yes">มี</option>
                         </select>
                     </div>
                     
-                    <div id="singleFieldBox" class="row g-3 px-0 mx-0 mt-2">
+                    <div id="singleStockBox" class="row g-3 px-0 mx-0 mt-2">
                         <div class="col-md-6"><label class="small fw-bold mb-1">ราคา</label><input type="number" name="price" class="form-control"></div>
                         <div class="col-md-6"><label class="small fw-bold mb-1">สต็อกรวม</label><input type="number" name="stock" class="form-control"></div>
                     </div>
@@ -106,10 +105,10 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                     <div class="col-12 mt-3"><label class="small fw-bold mb-1">รายละเอียด</label><textarea name="description" class="form-control" rows="2"></textarea></div>
                     <div class="col-12 mt-3"><label class="small fw-bold mb-1">รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
                     
-                    <div id="variantSectionBox" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
+                    <div id="variantSection" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
                         <h6 class="text-neon-cyan fw-bold mb-3"><i class="bi bi-layers"></i> รายการรุ่นย่อยและรูปภาพ</h6>
-                        <div id="variantInputsContainer"></div>
-                        <button type="button" class="btn btn-sm btn-outline-cyan rounded-pill mt-2" onclick="addNewVariantRow()">+ เพิ่มแถวรุ่นย่อย</button>
+                        <div id="variantRowsContainer"></div>
+                        <button type="button" class="btn btn-sm btn-outline-cyan rounded-pill mt-2" onclick="addVariantRowDirect()">+ เพิ่มแถวรุ่นย่อย</button>
                     </div>
                 </div>
             </div>
@@ -121,24 +120,25 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 </div>
 
 <script>
-    // ฟังก์ชันสลับการแสดงผลช่องกรอกข้อมูล
-    function checkVariantStatus(val) {
+    // บังคับให้ฟังก์ชันทำงานได้แม้แยกไฟล์
+    function toggleVariantUI(val) {
+        const vBox = document.getElementById('variantSection');
+        const sBox = document.getElementById('singleStockBox');
         if(val === 'yes') {
-            document.getElementById('variantSectionBox').style.display = 'block';
-            document.getElementById('singleFieldBox').style.display = 'none';
+            vBox.style.display = 'block';
+            sBox.style.display = 'none';
         } else {
-            document.getElementById('variantSectionBox').style.display = 'none';
-            document.getElementById('singleFieldBox').style.display = 'flex';
+            vBox.style.display = 'none';
+            sBox.style.display = 'flex';
         }
     }
 
-    // ฟังก์ชันเพิ่มแถวรุ่นย่อย (แก้ไขฟังก์ชันให้ทำงานอิสระ)
-    function addNewVariantRow() {
-        const container = document.getElementById('variantInputsContainer');
-        const row = document.createElement('div');
-        row.className = 'variant-card mb-3 p-3 border border-secondary border-opacity-50 rounded shadow-sm';
-        row.style.background = 'rgba(255,255,255,0.02)';
-        row.innerHTML = `
+    function addVariantRowDirect() {
+        const container = document.getElementById('variantRowsContainer');
+        const div = document.createElement('div');
+        div.className = 'variant-card mb-3 p-3 border border-secondary border-opacity-50 rounded shadow-sm';
+        div.style.background = 'rgba(255,255,255,0.02)';
+        div.innerHTML = `
             <div class="row g-2 align-items-end">
                 <div class="col-md-3"><label class="small fw-bold">ชื่อรุ่น</label><input type="text" name="v_names[]" class="form-control form-control-sm" required></div>
                 <div class="col-md-2"><label class="small fw-bold">ราคา</label><input type="number" name="v_prices[]" class="form-control form-control-sm" required></div>
@@ -147,6 +147,6 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                 <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-danger border-0" onclick="this.closest('.variant-card').remove()"><i class="bi bi-trash"></i></button></div>
             </div>
         `;
-        container.appendChild(row);
+        container.appendChild(div);
     }
 </script>
