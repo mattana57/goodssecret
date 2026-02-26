@@ -34,15 +34,29 @@ if (isset($_POST['save_product'])) {
 $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC");
 ?>
 
+<style>
+    /* ปรับแต่งปุ่มให้เข้าธีมนีออน */
+    .btn-edit-neon { border: 1px solid #ffc107; color: #ffc107; background: transparent; transition: 0.3s; }
+    .btn-edit-neon:hover { background: #ffc107; color: #000; box-shadow: 0 0 10px #ffc107; }
+    
+    .btn-del-neon { border: 1px solid #ff4d4d; color: #ff4d4d; background: transparent; transition: 0.3s; }
+    .btn-del-neon:hover { background: #ff4d4d; color: #fff; box-shadow: 0 0 10px #ff4d4d; }
+    
+    .variant-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(187, 134, 252, 0.2); }
+    .table td { color: #ffffff !important; } /* บังคับตัวหนังสือขาวสว่าง */
+</style>
+
 <div class="glass-panel">
     <div class="d-flex justify-content-between mb-4 align-items-center">
         <h4 class="text-white fw-bold"><i class="bi bi-box-seam me-2"></i> สินค้า & สต็อก</h4>
-        <button type="button" class="btn btn-neon-pink rounded-pill px-4 shadow" data-bs-toggle="modal" data-bs-target="#pModalMain">+ เพิ่มสินค้าใหม่</button>
+        <button type="button" class="btn btn-neon-pink rounded-pill px-4 shadow-lg" data-bs-toggle="modal" data-bs-target="#pModalFull">
+            <i class="bi bi-plus-circle me-2"></i>เพิ่มสินค้าใหม่
+        </button>
     </div>
     
     <div class="table-responsive">
-        <table class="table table-hover w-100">
-            <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก (รุ่นย่อย)</th><th>จัดการ</th></tr></thead>
+        <table class="table table-hover datatable-js w-100">
+            <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก (รุ่นย่อย)</th><th class="text-center">จัดการ</th></tr></thead>
             <tbody>
                 <?php while($p = $products->fetch_assoc()): 
                     $v_q = $conn->query("SELECT * FROM product_variants WHERE product_id=".$p['id']);
@@ -56,15 +70,15 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                             <span class="badge bg-secondary px-3 fs-6"><?= $p['stock'] ?> ชิ้น</span>
                         <?php else: while($v = $v_q->fetch_assoc()): ?>
                             <div class="d-flex justify-content-between border-bottom border-white border-opacity-10 mb-1 pb-1">
-                                <span class="text-white"><?= $v['variant_name'] ?>:</span>
-                                <span class="text-neon-cyan fw-bold fs-6 ms-4"><?= $v['stock'] ?></span>
+                                <span class="text-white opacity-75 small"><?= $v['variant_name'] ?>:</span>
+                                <span class="text-neon-cyan fw-bold ms-3"><?= $v['stock'] ?></span>
                             </div>
                         <?php endwhile; endif; ?>
                     </td>
-                    <td>
-                        <div class="btn-group shadow-sm">
-                            <button type="button" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="return confirm('ยืนยันการลบ?')"><i class="bi bi-trash"></i></button>
+                    <td class="text-center">
+                        <div class="btn-group gap-2">
+                            <button type="button" class="btn btn-sm btn-edit-neon rounded-3 px-3"><i class="bi bi-pencil-square"></i></button>
+                            <button type="button" class="btn btn-sm btn-del-neon rounded-3 px-3" onclick="confirmDelete(<?= $p['id'] ?>)"><i class="bi bi-trash3"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -74,79 +88,79 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
     </div>
 </div>
 
-<div class="modal fade" id="pModalMain" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="pModalFull" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" style="background: #1a0028; border: 2px solid #bb86fc; color: #ffffff;" method="POST" enctype="multipart/form-data">
             <div class="modal-header border-secondary">
-                <h4 class="text-neon-purple fw-bold mb-0">จัดการสินค้า</h4>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h4 class="text-neon-purple fw-bold mb-0">จัดการคลังสินค้า</h4>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-6"><label class="small fw-bold mb-1">ชื่อสินค้า</label><input type="text" name="name" class="form-control text-white" required></div>
+                    <div class="col-md-6"><label class="small fw-bold mb-1 opacity-75">ชื่อสินค้า</label><input type="text" name="name" class="form-control text-white" required></div>
                     <div class="col-md-3">
-                        <label class="small fw-bold mb-1">ประเภท</label>
+                        <label class="small fw-bold mb-1 opacity-75">ประเภท</label>
                         <select name="category_id" class="form-select text-white">
                             <?php $cl = $conn->query("SELECT * FROM categories"); while($c=$cl->fetch_assoc()) echo "<option value='{$c['id']}'>{$c['name']}</option>"; ?>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="small fw-bold mb-1">มีรุ่นย่อย?</label>
-                        <select name="is_variant" id="isVariantSelect" class="form-select text-white" onchange="toggleVariantUI(this.value)">
+                        <label class="small fw-bold mb-1 opacity-75">มีรุ่นย่อย?</label>
+                        <select name="is_variant" id="v_select_field" class="form-select text-white" onchange="toggleVariantDisplay(this.value)">
                             <option value="no">ไม่มี</option><option value="yes">มี</option>
                         </select>
                     </div>
                     
-                    <div id="singleStockBox" class="row g-3 px-0 mx-0 mt-2">
-                        <div class="col-md-6"><label class="small fw-bold mb-1">ราคา</label><input type="number" name="price" class="form-control"></div>
-                        <div class="col-md-6"><label class="small fw-bold mb-1">สต็อกรวม</label><input type="number" name="stock" class="form-control"></div>
+                    <div id="no_variant_row" class="row g-3 px-0 mx-0 mt-2">
+                        <div class="col-md-6"><label class="small fw-bold mb-1">ราคาขาย</label><input type="number" name="price" class="form-control"></div>
+                        <div class="col-md-6"><label class="small fw-bold mb-1">จำนวนสต็อก</label><input type="number" name="stock" class="form-control"></div>
                     </div>
                     
-                    <div class="col-12 mt-3"><label class="small fw-bold mb-1">รายละเอียด</label><textarea name="description" class="form-control" rows="2"></textarea></div>
-                    <div class="col-12 mt-3"><label class="small fw-bold mb-1">รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
+                    <div class="col-12 mt-3"><label class="small fw-bold mb-1 opacity-75">รายละเอียดสินค้า</label><textarea name="description" class="form-control" rows="2"></textarea></div>
+                    <div class="col-12 mt-3"><label class="small fw-bold mb-1 opacity-75">รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
                     
-                    <div id="variantSection" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
-                        <h6 class="text-neon-cyan fw-bold mb-3"><i class="bi bi-layers"></i> รายการรุ่นย่อยและรูปภาพ</h6>
-                        <div id="variantRowsContainer"></div>
-                        <button type="button" class="btn btn-sm btn-outline-cyan rounded-pill mt-2" onclick="addVariantRowDirect()">+ เพิ่มแถวรุ่นย่อย</button>
+                    <div id="variant_section_box" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary border-opacity-50">
+                        <h6 class="text-neon-cyan fw-bold mb-3"><i class="bi bi-layers-half me-2"></i>รายการรุ่นย่อยและรูปภาพ</h6>
+                        <div id="variant_list_container"></div>
+                        <button type="button" class="btn btn-sm btn-outline-cyan rounded-pill mt-2" onclick="addVariantRowAction()">
+                            <i class="bi bi-plus-circle me-1"></i>เพิ่มแถวรุ่นย่อย
+                        </button>
                     </div>
                 </div>
             </div>
             <div class="modal-footer border-secondary">
-                <button type="submit" name="save_product" class="btn btn-neon-pink w-100 py-3 fw-bold fs-5 shadow">บันทึกข้อมูลเข้าคลัง</button>
+                <button type="submit" name="save_product" class="btn btn-neon-pink w-100 py-3 fw-bold fs-5 shadow-lg">บันทึกข้อมูลเข้าเซิร์ฟเวอร์</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    // บังคับให้ฟังก์ชันทำงานได้แม้แยกไฟล์
-    function toggleVariantUI(val) {
-        const vBox = document.getElementById('variantSection');
-        const sBox = document.getElementById('singleStockBox');
-        if(val === 'yes') {
-            vBox.style.display = 'block';
-            sBox.style.display = 'none';
-        } else {
-            vBox.style.display = 'none';
-            sBox.style.display = 'flex';
-        }
+    // ฟังก์ชันที่ทำให้ปุ่มกดได้ทันที แม้แยกไฟล์
+    function toggleVariantDisplay(val) {
+        document.getElementById('variant_section_box').style.display = (val === 'yes') ? 'block' : 'none';
+        document.getElementById('no_variant_row').style.display = (val === 'yes') ? 'none' : 'flex';
     }
 
-    function addVariantRowDirect() {
-        const container = document.getElementById('variantRowsContainer');
+    function addVariantRowAction() {
+        const container = document.getElementById('variant_list_container');
         const div = document.createElement('div');
-        div.className = 'variant-card mb-3 p-3 border border-secondary border-opacity-50 rounded shadow-sm';
-        div.style.background = 'rgba(255,255,255,0.02)';
+        div.className = 'variant-card mb-3 p-3 border border-secondary border-opacity-25 rounded-4 shadow-sm';
         div.innerHTML = `
             <div class="row g-2 align-items-end">
                 <div class="col-md-3"><label class="small fw-bold">ชื่อรุ่น</label><input type="text" name="v_names[]" class="form-control form-control-sm" required></div>
                 <div class="col-md-2"><label class="small fw-bold">ราคา</label><input type="number" name="v_prices[]" class="form-control form-control-sm" required></div>
                 <div class="col-md-2"><label class="small fw-bold">สต็อก</label><input type="number" name="v_stocks[]" class="form-control form-control-sm" value="0"></div>
                 <div class="col-md-4"><label class="small fw-bold">รูปประจำรุ่น</label><input type="file" name="v_images[]" class="form-control form-control-sm"></div>
-                <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-danger border-0" onclick="this.closest('.variant-card').remove()"><i class="bi bi-trash"></i></button></div>
+                <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-del-neon border-0" onclick="this.closest('.variant-card').remove()"><i class="bi bi-trash-fill"></i></button></div>
             </div>
         `;
         container.appendChild(div);
+    }
+
+    function confirmDelete(pid) {
+        if(confirm('ต้องการลบสินค้านี้ใช่หรือไม่? ข้อมูลรุ่นย่อยจะถูกลบออกทั้งหมด')) {
+            window.location.href = 'admin_dashboard.php?tab=products&del_id=' + pid + '&type=product';
+        }
     }
 </script>
