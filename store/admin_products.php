@@ -37,7 +37,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 <div class="glass-panel">
     <div class="d-flex justify-content-between mb-4 align-items-center">
         <h4 class="text-white fw-bold"><i class="bi bi-box-seam me-2"></i> สินค้า & สต็อก</h4>
-        <button class="btn btn-neon-pink rounded-pill px-4 shadow" data-bs-toggle="modal" data-bs-target="#pModal">+ เพิ่มสินค้าใหม่</button>
+        <button type="button" class="btn btn-neon-pink rounded-pill px-4 shadow" data-bs-toggle="modal" data-bs-target="#pModal">+ เพิ่มสินค้าใหม่</button>
     </div>
     
     <table class="table table-hover datatable-js w-100">
@@ -62,8 +62,8 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                 </td>
                 <td>
                     <div class="btn-group shadow-sm">
-                        <button class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
             </tr>
@@ -72,12 +72,12 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
     </table>
 </div>
 
-<div class="modal fade" id="pModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="pModal" tabindex="-1" aria-labelledby="pModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" style="background: #1a0028; border: 2px solid #bb86fc; color: #ffffff;" method="POST" enctype="multipart/form-data">
             <div class="modal-header border-secondary">
                 <h4 class="text-neon-purple fw-bold mb-0">จัดการสินค้า</h4>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
@@ -93,12 +93,12 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                     </div>
                     <div class="col-md-3">
                         <label class="small fw-bold mb-1">มีรุ่นย่อย?</label>
-                        <select name="is_variant" class="form-select text-white" onchange="$('#v_box').toggle(this.value==='yes'); $('#no_v').toggle(this.value==='no')">
+                        <select name="is_variant" id="variantSelect" class="form-select text-white" onchange="checkVariantStatus(this.value)">
                             <option value="no">ไม่มี</option><option value="yes">มี</option>
                         </select>
                     </div>
                     
-                    <div id="no_v" class="row g-3 px-0 mx-0 mt-2">
+                    <div id="singleFieldBox" class="row g-3 px-0 mx-0 mt-2">
                         <div class="col-md-6"><label class="small fw-bold mb-1">ราคา</label><input type="number" name="price" class="form-control"></div>
                         <div class="col-md-6"><label class="small fw-bold mb-1">สต็อกรวม</label><input type="number" name="stock" class="form-control"></div>
                     </div>
@@ -106,10 +106,10 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                     <div class="col-12 mt-3"><label class="small fw-bold mb-1">รายละเอียด</label><textarea name="description" class="form-control" rows="2"></textarea></div>
                     <div class="col-12 mt-3"><label class="small fw-bold mb-1">รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
                     
-                    <div id="v_box" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
+                    <div id="variantSectionBox" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
                         <h6 class="text-neon-cyan fw-bold mb-3"><i class="bi bi-layers"></i> รายการรุ่นย่อยและรูปภาพ</h6>
-                        <div id="v_container"></div>
-                        <button type="button" class="btn btn-sm btn-outline-cyan rounded-pill mt-2" onclick="addVRow()">+ เพิ่มแถวรุ่นย่อย</button>
+                        <div id="variantInputsContainer"></div>
+                        <button type="button" class="btn btn-sm btn-outline-cyan rounded-pill mt-2" onclick="addNewVariantRow()">+ เพิ่มแถวรุ่นย่อย</button>
                     </div>
                 </div>
             </div>
@@ -121,15 +121,32 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 </div>
 
 <script>
-    function addVRow() {
-        $('#v_container').append(`<div class="variant-card mb-3 p-3 border border-secondary border-opacity-50 rounded shadow-sm" style="background: rgba(255,255,255,0.02);">
+    // ฟังก์ชันสลับการแสดงผลช่องกรอกข้อมูล
+    function checkVariantStatus(val) {
+        if(val === 'yes') {
+            document.getElementById('variantSectionBox').style.display = 'block';
+            document.getElementById('singleFieldBox').style.display = 'none';
+        } else {
+            document.getElementById('variantSectionBox').style.display = 'none';
+            document.getElementById('singleFieldBox').style.display = 'flex';
+        }
+    }
+
+    // ฟังก์ชันเพิ่มแถวรุ่นย่อย (แก้ไขฟังก์ชันให้ทำงานอิสระ)
+    function addNewVariantRow() {
+        const container = document.getElementById('variantInputsContainer');
+        const row = document.createElement('div');
+        row.className = 'variant-card mb-3 p-3 border border-secondary border-opacity-50 rounded shadow-sm';
+        row.style.background = 'rgba(255,255,255,0.02)';
+        row.innerHTML = `
             <div class="row g-2 align-items-end">
                 <div class="col-md-3"><label class="small fw-bold">ชื่อรุ่น</label><input type="text" name="v_names[]" class="form-control form-control-sm" required></div>
                 <div class="col-md-2"><label class="small fw-bold">ราคา</label><input type="number" name="v_prices[]" class="form-control form-control-sm" required></div>
                 <div class="col-md-2"><label class="small fw-bold">สต็อก</label><input type="number" name="v_stocks[]" class="form-control form-control-sm" value="0"></div>
                 <div class="col-md-4"><label class="small fw-bold">รูปประจำรุ่น</label><input type="file" name="v_images[]" class="form-control form-control-sm"></div>
-                <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-danger border-0" onclick="$(this).closest('.variant-card').remove()"><i class="bi bi-trash"></i></button></div>
+                <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-danger border-0" onclick="this.closest('.variant-card').remove()"><i class="bi bi-trash"></i></button></div>
             </div>
-        </div>`);
+        `;
+        container.appendChild(row);
     }
 </script>
