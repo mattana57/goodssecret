@@ -42,7 +42,7 @@ if (isset($_GET['ajax_action'])) {
     }
 }
 
-// --- [Logic จัดการสินค้า]: ระบบอัปโหลดรูปภาพและบันทึกข้อมูล ---
+// --- [Logic จัดการสินค้า]: อัปเกรดเพื่อรองรับรูปภาพรายรุ่นย่อย ---
 if (isset($_POST['save_product'])) {
     $name = $conn->real_escape_string($_POST['name']); 
     $cat_id = $_POST['category_id']; 
@@ -71,8 +71,15 @@ if (isset($_POST['save_product'])) {
 
         if($is_variant == 'yes' && isset($_POST['v_names'])) {
             foreach($_POST['v_names'] as $i => $vname) {
-                $vprice = $_POST['v_prices'][$i]; $vstock = $_POST['v_stocks'][$i];
-                $conn->query("INSERT INTO product_variants (product_id, variant_name, price, stock) VALUES ($new_p_id, '".$conn->real_escape_string($vname)."', '$vprice', $vstock)");
+                $vprice = $_POST['v_prices'][$i]; 
+                $vstock = $_POST['v_stocks'][$i];
+                $vimg_name = "";
+                // --- จัดการรูปภาพของรุ่นย่อย ---
+                if (isset($_FILES['v_images']['name'][$i]) && $_FILES['v_images']['error'][$i] == 0) {
+                    $vimg_name = "v_" . time() . "_" . basename($_FILES['v_images']['name'][$i]);
+                    move_uploaded_file($_FILES['v_images']['tmp_name'][$i], "images/" . $vimg_name);
+                }
+                $conn->query("INSERT INTO product_variants (product_id, variant_name, price, stock, variant_image) VALUES ($new_p_id, '".$conn->real_escape_string($vname)."', '$vprice', $vstock, '$vimg_name')");
             }
         }
     }
@@ -264,7 +271,11 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
                 <div id="no_variant_inputs" class="row g-3 px-0 mx-0"><div class="col-md-6"><label>ราคา</label><input type="number" name="price" id="p_price" class="form-control"></div><div class="col-md-6"><label>สต็อก</label><input type="number" name="stock" id="p_stock" class="form-control"></div></div>
                 <div class="col-12"><label>รายละเอียด</label><textarea name="description" id="p_desc" class="form-control" rows="2"></textarea></div>
                 <div class="col-12"><label>รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
-                <div id="variant_fields" style="display:none;" class="col-12"><div id="variant_container"></div><button type="button" class="btn btn-sm btn-outline-info" onclick="addVariantRow()">+ เพิ่มรุ่นย่อย</button></div>
+                <div id="variant_fields" style="display:none;" class="col-12 mt-3">
+                    <h6 class="text-info border-bottom border-secondary pb-2">รายการรุ่นย่อยและรูปภาพ</h6>
+                    <div id="variant_container"></div>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="addVariantRow()">+ เพิ่มรุ่นย่อย</button>
+                </div>
             </div>
         </div>
         <div class="modal-footer border-secondary"><button type="submit" name="save_product" class="btn btn-neon-pink w-100 shadow">บันทึกสินค้า</button></div>
@@ -312,7 +323,10 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
 <script>
     $(document).ready(function() { $('.datatable-js').DataTable({ "language": { "search": "ค้นหา:", "lengthMenu": "แสดง _MENU_ รายการ" } }); });
     function toggleVariantFields(val) { $('#no_variant_inputs').toggle(val === 'no'); $('#variant_fields').toggle(val === 'yes'); }
-    function addVariantRow() { $('#variant_container').append(`<div class="variant-card mb-2 p-2 border border-secondary rounded"><div class="row g-2 align-items-end"><div class="col-md-5"><label class="small text-white">รุ่น</label><input type="text" name="v_names[]" class="form-control form-control-sm" required></div><div class="col-md-3"><label class="small text-white">ราคา</label><input type="number" name="v_prices[]" class="form-control form-control-sm" required></div><div class="col-md-3"><label class="small text-white">สต็อก</label><input type="number" name="v_stocks[]" class="form-control form-control-sm" value="0"></div><div class="col-md-1"><button type="button" class="btn btn-sm btn-outline-danger shadow-sm" onclick="this.closest('.variant-card').remove()"><i class="bi bi-trash"></i></button></div></div></div>`); }
+    
+    // เพิ่มช่องอัปโหลดรูปภาพในแถวรุ่นย่อย
+    function addVariantRow() { $('#variant_container').append(`<div class="variant-card mb-2 p-2 border border-secondary rounded shadow-sm"><div class="row g-2 align-items-end"><div class="col-md-3"><label class="small text-white">รุ่น</label><input type="text" name="v_names[]" class="form-control form-control-sm" required></div><div class="col-md-2"><label class="small text-white">ราคา</label><input type="number" name="v_prices[]" class="form-control form-control-sm" required></div><div class="col-md-2"><label class="small text-white">สต็อก</label><input type="number" name="v_stocks[]" class="form-control form-control-sm" value="0"></div><div class="col-md-4"><label class="small text-white">รูปภาพ</label><input type="file" name="v_images[]" class="form-control form-control-sm" accept="image/*"></div><div class="col-md-1"><button type="button" class="btn btn-sm btn-outline-danger shadow-sm" onclick="this.closest('.variant-card').remove()"><i class="bi bi-trash"></i></button></div></div></div>`); }
+    
     function manualUpdateStockDirect(pid, new_val) { $.get('admin_dashboard.php', {ajax_action: 'update_stock_direct', pid: pid, val: new_val}); }
     function manualUpdateStockVariant(vid, new_val) { $.get('admin_dashboard.php', {ajax_action: 'update_stock_value', vid: vid, val: new_val}); }
     
@@ -324,7 +338,7 @@ $orders_list = $conn->query("SELECT * FROM orders ORDER BY id DESC");
         $.get('admin_dashboard.php', {ajax_action: 'get_user_history', uid: uid}, function(data) { $('#h_content').html(data); }); 
     }
 
-    function openAddProduct() { $('#productModal').find('form')[0].reset(); $('#p_id').val(''); toggleVariantFields('no'); $('#productModal').modal('show'); }
+    function openAddProduct() { $('#productModal').find('form')[0].reset(); $('#p_id').val(''); $('#variant_container').empty(); toggleVariantFields('no'); $('#productModal').modal('show'); }
     function openEditProduct(p) { $('#p_id').val(p.id); $('#p_name').val(p.name); $('#p_price').val(p.price); $('#p_stock').val(p.stock); $('#p_cat').val(p.category_id); $('#p_desc').val(p.description); toggleVariantFields('no'); $('#productModal').modal('show'); }
     function openCatModal() { $('#cat_id').val(''); $('#cat_name').val(''); $('#cat_title').text('เพิ่มประเภทสินค้า'); $('#catModal').modal('show'); }
     function openEditCat(c) { $('#cat_id').val(c.id); $('#cat_name').val(c.name); $('#cat_title').text('แก้ไขประเภทสินค้า'); $('#catModal').modal('show'); }
