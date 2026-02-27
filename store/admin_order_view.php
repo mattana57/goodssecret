@@ -48,11 +48,22 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name FROM orde
         .text-neon-pink { color: #f107a3; text-shadow: 0 0 10px rgba(241, 7, 163, 0.5); }
         .text-neon-cyan { color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.5); }
         .slip-img { max-width: 100%; border-radius: 15px; border: 2px solid #00f2fe; cursor: pointer; }
-        
-        /* สไตล์ปุ่มสถานะแบบ Step */
         .step-btn { transition: 0.3s; border-radius: 50px; font-weight: bold; padding: 10px 20px; }
-        .step-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .btn-check:checked + .btn-outline-primary { background-color: #007bff; color: white; box-shadow: 0 0 15px #007bff; }
+        
+        /* --- ดีไซน์ป๊อปอัพนีออนใหม่ --- */
+        .modal-neon .modal-content {
+            background: rgba(26, 0, 40, 0.95);
+            backdrop-filter: blur(15px);
+            border: 2px solid #bb86fc;
+            border-radius: 30px;
+            color: #fff;
+        }
+        .btn-confirm-neon {
+            background: linear-gradient(135deg, #00f2fe, #bb86fc);
+            border: none; color: #000; font-weight: bold;
+            border-radius: 50px; padding: 10px 30px; transition: 0.3s;
+        }
+        .btn-confirm-neon:hover { box-shadow: 0 0 15px #bb86fc; transform: translateY(-2px); }
     </style>
 </head>
 <body>
@@ -105,72 +116,79 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name FROM orde
 
             <div class="glass-card bg-black border-neon-cyan shadow-lg">
                 <h5 class="text-neon-cyan mb-4"><i class="bi bi-patch-check-fill"></i> ขั้นตอนการจัดการออเดอร์</h5>
-                
                 <div class="d-flex flex-wrap gap-2 mb-4">
-                    <button type="button" onclick="quickUpdate('processing')" 
-                        class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">
-                        <i class="bi bi-check2-circle"></i> 1. ยืนยันยอดเงิน (เตรียมส่ง)
+                    <button type="button" onclick="askUpdate('processing')" class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">
+                        <i class="bi bi-check2-circle"></i> 1. ยืนยันยอดเงิน
                     </button>
-                    
-                    <button type="button" onclick="quickUpdate('shipped')" 
-                        class="btn <?= $order['status']=='shipped' ? 'btn-info text-dark shadow' : 'btn-outline-info' ?> step-btn px-3">
+                    <button type="button" onclick="askUpdate('shipped')" class="btn <?= $order['status']=='shipped' ? 'btn-info text-dark shadow' : 'btn-outline-info' ?> step-btn px-3">
                         <i class="bi bi-truck"></i> 2. ส่งสินค้าแล้ว
                     </button>
-
-                    <button type="button" onclick="quickUpdate('delivered')" 
-                        class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">
+                    <button type="button" onclick="askUpdate('delivered')" class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">
                         <i class="bi bi-flag-fill"></i> 3. ปิดงาน (สำเร็จ)
                     </button>
-
-                    <button type="button" onclick="toggleCancelBox()" 
-                        class="btn <?= $order['status']=='cancelled' ? 'btn-danger shadow' : 'btn-outline-danger' ?> step-btn px-3 ms-auto">
+                    <button type="button" onclick="toggleCancelBox()" class="btn <?= $order['status']=='cancelled' ? 'btn-danger shadow' : 'btn-outline-danger' ?> step-btn px-3 ms-auto">
                         <i class="bi bi-x-circle"></i> ยกเลิกบิล
                     </button>
                 </div>
 
                 <div id="cancelReasonInput" style="display:none;" class="mb-3 animate__animated animate__fadeIn">
-                    <label class="small text-danger mb-1">ระบุเหตุผลที่ยกเลิก (ลูกค้าจะเห็นข้อความนี้):</label>
+                    <label class="small text-danger mb-1">ระบุเหตุผลที่ยกเลิก:</label>
                     <div class="input-group">
-                        <input type="text" id="reason_text" class="form-control bg-dark text-white border-danger" placeholder="เช่น สินค้าหมด, ไม่แนบสลิปจริง..." value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>">
-                        <button class="btn btn-danger" type="button" onclick="quickUpdate('cancelled')">ยืนยันยกเลิก</button>
+                        <input type="text" id="reason_text" class="form-control bg-dark text-white border-danger" placeholder="ระบุเหตุผล..." value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>">
+                        <button class="btn btn-danger" type="button" onclick="askUpdate('cancelled')">ยืนยันยกเลิก</button>
                     </div>
                 </div>
-                
-                <p class="small opacity-50 mb-0 mt-3 border-top border-secondary pt-2">
-                    สถานะปัจจุบัน: <span class="badge bg-secondary text-uppercase"><?= $order['status'] ?></span>
-                    <span class="ms-2">| ฝั่งลูกค้าจะเห็นตามความคืบหน้าที่คุณกด</span>
-                </p>
+                <p class="small opacity-50 mb-0 mt-3 border-top border-secondary pt-2">สถานะปัจจุบัน: <span class="badge bg-secondary text-uppercase"><?= $order['status'] ?></span></p>
             </div>
         </div>
     </div>
 </div>
 
+<div class="modal fade modal-neon" id="neonConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center py-4">
+            <div class="modal-body">
+                <i id="pIcon" class="bi bi-question-circle text-neon-cyan display-1 mb-4 d-block"></i>
+                <h3 class="fw-bold mb-3">ยืนยันการดำเนินการ</h3>
+                <p class="opacity-75 mb-4 px-3 fs-5" id="pMessage">คุณแน่ใจหรือไม่ที่จะเปลี่ยนสถานะ?</p>
+                <div class="d-flex gap-3 justify-content-center mt-2">
+                    <button type="button" class="btn btn-outline-light px-4 rounded-pill" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" id="pConfirmBtn" class="btn btn-confirm-neon shadow">ตกลง</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // ฟังก์ชันซ่อน/แสดงช่องเหตุผลยกเลิก
     function toggleCancelBox() { $('#cancelReasonInput').slideToggle(); }
 
-    // ฟังก์ชันอัปเดตสถานะแบบรวดเร็ว (เชื่อม AJAX 100%)
-    function quickUpdate(newStatus) {
+    // ฟังก์ชันใหม่: เรียก Modal แทน confirm()
+    function askUpdate(newStatus) {
         const reason = $('#reason_text').val();
+        const modal = new bootstrap.Modal(document.getElementById('neonConfirmModal'));
         
-        if(!confirm('ยืนยันการเปลี่ยนสถานะเป็น [' + newStatus + '] ใช่หรือไม่?')) return;
+        // ปรับข้อความตามสถานะ
+        $('#pMessage').html('ต้องการเปลี่ยนสถานะออเดอร์เป็น <b class="text-neon-cyan">[' + newStatus + ']</b> ใช่หรือไม่?');
+        
+        if(newStatus === 'cancelled') {
+            $('#pIcon').attr('class', 'bi bi-exclamation-octagon text-danger display-1 mb-4 d-block');
+        } else {
+            $('#pIcon').attr('class', 'bi bi-arrow-repeat text-neon-cyan display-1 mb-4 d-block');
+        }
 
-        $.post(window.location.href, { 
-            ajax_status: 1, 
-            status: newStatus, 
-            reason: reason 
-        }, function(res) {
-            try {
-                const data = JSON.parse(res);
-                if(data.status === 'success') {
-                    // รีโหลดหน้าเพื่อให้สีปุ่มเปลี่ยนตามสถานะใหม่และลูกค้าได้รับข้อมูลทันที
-                    window.location.reload(); 
-                }
-            } catch(e) {
-                window.location.reload();
-            }
-        }).fail(function() {
-            alert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล');
+        modal.show();
+
+        // เมื่อกดตกลงในป๊อปอัพ
+        $('#pConfirmBtn').off('click').on('click', function() {
+            modal.hide();
+            $.post(window.location.href, { ajax_status: 1, status: newStatus, reason: reason }, function(res) {
+                try {
+                    const data = JSON.parse(res);
+                    if(data.status === 'success') { window.location.reload(); }
+                } catch(e) { window.location.reload(); }
+            });
         });
     }
 </script>
