@@ -43,11 +43,10 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         .glass-card { background: rgba(255, 255, 255, 0.05); border-radius: 20px; padding: 25px; border: 1px solid rgba(187, 134, 252, 0.2); }
         .text-neon-pink { color: #f107a3; text-shadow: 0 0 10px #f107a3; }
         .text-neon-cyan { color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
-        .text-neon-yellow { color: #ffc107; text-shadow: 0 0 10px #ffc107; }
         .step-btn { transition: 0.3s; border-radius: 50px; font-weight: bold; padding: 10px 20px; }
-        /* ป๊อปอัพนีออน แทนกรอบขาว */
         .modal-neon .modal-content { background: rgba(26, 0, 40, 0.95); backdrop-filter: blur(15px); border: 2px solid #bb86fc; border-radius: 30px; color: #fff; }
         .product-img-td { width: 65px; height: 65px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        .alert-neon-danger { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 15px; box-shadow: 0 0 10px rgba(255, 77, 77, 0.2); }
     </style>
 </head>
 <body>
@@ -60,29 +59,31 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
     <div class="row g-4">
         <div class="col-md-4">
             <div class="glass-card mb-4 border-info">
-                <h5 class="text-info border-bottom border-secondary pb-2 mb-3">ข้อมูลผู้รับ</h5>
+                <h5 class="text-info border-bottom border-white border-opacity-10 pb-2 mb-3">ข้อมูลผู้รับ</h5>
                 <p class="mb-1 fw-bold fs-5"><?= htmlspecialchars($order['fullname']) ?></p>
                 <p class="small mb-1 text-white-50">โทร: <?= htmlspecialchars($order['phone']) ?></p>
                 <p class="small mb-0 text-white-50">ที่อยู่: <?= htmlspecialchars($order['address']) ?> <?= htmlspecialchars($order['province']) ?> <?= htmlspecialchars($order['zipcode']) ?></p>
             </div>
 
             <div class="glass-card border-warning">
-                <h5 class="text-warning border-bottom border-secondary pb-2 mb-3">การชำระเงิน</h5>
-                <p class="mb-3">วิธีชำระ: <span class="fw-bold <?= ($order['payment_method'] == 'cod') ? 'text-neon-yellow' : 'text-neon-cyan' ?>"><?= ($order['payment_method'] == 'cod') ? 'เก็บเงินปลายทาง (COD)' : 'โอนเงินผ่านธนาคาร' ?></span></p>
-                <hr class="border-secondary opacity-25">
-                <?php if($order['payment_method'] == 'bank'): ?>
-                    <?php if(!empty($order['slip_image'])): ?>
-                        <img src="uploads/slips/<?= $order['slip_image'] ?>" class="w-100 rounded-3 shadow" style="cursor:pointer" onclick="window.open(this.src)">
-                    <?php else: ?>
-                        <div class="alert alert-secondary py-2 mt-2 small text-center">ลูกค้ายังไม่ได้แนบสลิป</div>
-                    <?php endif; ?>
+                <h5 class="text-warning border-bottom border-white border-opacity-10 pb-2 mb-3">การชำระเงิน</h5>
+                <p class="mb-3">วิธีชำระ: <span class="fw-bold <?= ($order['payment_method'] == 'cod') ? 'text-warning' : 'text-neon-cyan' ?>"><?= strtoupper($order['payment_method']) ?></span></p>
+                <?php if($order['payment_method'] == 'bank' && !empty($order['slip_image'])): ?>
+                    <img src="uploads/slips/<?= $order['slip_image'] ?>" class="w-100 rounded-3 border border-info" onclick="window.open(this.src)" style="cursor:pointer">
                 <?php else: ?>
-                    <div class="text-center py-4 opacity-75"><i class="bi bi-truck fs-1 d-block mb-2 text-neon-yellow"></i><span class="small d-block fw-bold">ออเดอร์เก็บเงินปลายทาง</span></div>
+                    <div class="text-center py-4 opacity-75"><i class="bi bi-truck fs-1 d-block mb-2 text-warning"></i><span class="small d-block fw-bold">เก็บเงินปลายทาง</span></div>
                 <?php endif; ?>
             </div>
         </div>
 
         <div class="col-md-8">
+            <?php if($order['status'] == 'cancelled'): ?>
+                <div class="alert alert-neon-danger mb-4">
+                    <i class="bi bi-x-circle-fill me-2"></i> <strong>ออเดอร์นี้ถูกยกเลิก:</strong> 
+                    <?= htmlspecialchars($order['cancel_reason'] ?: 'ไม่ได้ระบุเหตุผล') ?>
+                </div>
+            <?php endif; ?>
+
             <div class="glass-card mb-4">
                 <table class="table table-dark table-hover mb-0">
                     <thead><tr class="small text-white-50"><th colspan="2">สินค้า</th><th class="text-center">จำนวน</th><th class="text-end">รวม</th></tr></thead>
@@ -102,21 +103,20 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
             </div>
 
             <div class="glass-card bg-black border-neon-cyan shadow-lg">
-                <h5 class="text-neon-cyan mb-4"><i class="bi bi-patch-check-fill"></i> จัดการสถานะออเดอร์</h5>
+                <h5 class="text-neon-cyan mb-4 fw-bold"><i class="bi bi-patch-check-fill"></i> จัดการสถานะออเดอร์</h5>
                 <div class="d-flex flex-wrap gap-2 mb-4">
-                    <button type="button" onclick="askUpdate('processing')" class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">
-                        1. <?= ($order['payment_method'] == 'cod') ? 'ยืนยันออเดอร์' : 'ยืนยันยอดเงิน' ?>
-                    </button>
-                    <button type="button" onclick="askUpdate('shipped')" class="btn <?= $order['status']=='shipped' ? 'btn-info text-dark shadow' : 'btn-outline-info' ?> step-btn px-3">
-                        2. ส่งสินค้าแล้ว
-                    </button>
-                    <button type="button" onclick="askUpdate('delivered')" class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">
-                        3. สำเร็จ (ปิดงาน)
-                    </button>
-                    <button type="button" onclick="$('#reasonBox').slideToggle()" class="btn btn-outline-danger step-btn ms-auto"><i class="bi bi-x-circle"></i> ยกเลิกบิล</button>
+                    <button type="button" onclick="askUpdate('processing')" class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">1. ยืนยันยอด/บิล</button>
+                    <button type="button" onclick="askUpdate('shipped')" class="btn <?= $order['status']=='shipped' ? 'btn-info text-dark shadow' : 'btn-outline-info' ?> step-btn px-3">2. ส่งสินค้าแล้ว</button>
+                    <button type="button" onclick="askUpdate('delivered')" class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">3. สำเร็จ (ปิดงาน)</button>
+                    <button type="button" onclick="$('#reasonBox').slideToggle()" class="btn <?= $order['status']=='cancelled' ? 'btn-danger shadow' : 'btn-outline-danger' ?> step-btn ms-auto"><i class="bi bi-x-circle"></i> ยกเลิกบิล</button>
                 </div>
-                <div id="reasonBox" style="display:none;" class="mt-3"><div class="input-group"><input type="text" id="reason_text" class="form-control bg-dark text-white border-danger" placeholder="เหตุผลยกเลิก..."><button class="btn btn-danger" type="button" onclick="askUpdate('cancelled')">ยืนยัน</button></div></div>
-                <p class="small opacity-50 mb-0 mt-3 border-top border-secondary pt-2">สถานะปัจจุบัน: <span class="badge bg-secondary"><?= strtoupper($order['status']) ?></span></p>
+                <div id="reasonBox" style="<?= $order['status'] == 'cancelled' ? 'display:block;' : 'display:none;' ?>" class="mt-3">
+                    <div class="input-group">
+                        <input type="text" id="reason_text" class="form-control bg-dark text-white border-danger" placeholder="ระบุเหตุผลที่ยกเลิก..." value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>">
+                        <button class="btn btn-danger" type="button" onclick="askUpdate('cancelled')">บันทึกเหตุผล</button>
+                    </div>
+                </div>
+                <p class="small opacity-50 mb-0 mt-3 border-top border-secondary pt-2">สถานะปัจจุบัน: <span class=\"badge bg-secondary\"><?= strtoupper($order['status']) ?></span></p>
             </div>
         </div>
     </div>
@@ -137,13 +137,14 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function askUpdate(newStatus) {
+        const reason = $('#reason_text').val();
         const modal = new bootstrap.Modal(document.getElementById('neonConfirmModal'));
         $('#pMessage').html('ต้องการเปลี่ยนสถานะเป็น <b class="text-neon-cyan">[' + newStatus + ']</b> ใช่หรือไม่?');
         $('#pIcon').attr('class', newStatus === 'cancelled' ? 'bi bi-exclamation-octagon text-danger display-1 mb-4 d-block' : 'bi bi-arrow-repeat text-neon-cyan display-1 mb-4 d-block');
         modal.show();
         $('#pConfirmBtn').off('click').on('click', function() {
             modal.hide();
-            $.post(window.location.href, { ajax_status: 1, status: newStatus, reason: $('#reason_text').val() }, function(res) {
+            $.post(window.location.href, { ajax_status: 1, status: newStatus, reason: reason }, function(res) {
                 try { const data = JSON.parse(res); if(data.status === 'success') { window.location.reload(); } } catch(e) { window.location.reload(); }
             });
         });

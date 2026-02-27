@@ -50,8 +50,8 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
         .text-neon-cyan { color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
         .text-neon-pink { color: #f107a3; text-shadow: 0 0 10px #f107a3; }
         .form-control { background: rgba(0, 0, 0, 0.3) !important; border: 1px solid rgba(187, 134, 252, 0.3) !important; color: #fff !important; border-radius: 12px; }
-        /* กรอบแจ้งเตือนนีออน แทนกรอบขาว */
         .custom-alert-neon { background: rgba(0, 255, 136, 0.05); border: 1px solid #00ff88; color: #00ff88; border-radius: 20px; box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
+        .custom-alert-danger { background: rgba(255, 77, 77, 0.05); border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 20px; box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
         .modal-content { background: #1a0028 !important; border: 2px solid #bb86fc !important; border-radius: 25px; color: #fff; }
     </style>
 </head>
@@ -63,6 +63,13 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
             <h3 class="text-neon-cyan mb-0 fw-bold">บิล #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></h3>
             <span class="badge rounded-pill border border-info px-3 py-2 text-uppercase"><?= $order['status'] ?></span>
         </div>
+
+        <?php if($order['status'] == 'cancelled'): ?>
+            <div class="alert custom-alert-danger text-center mb-4">
+                <h5 class="fw-bold mb-1"><i class="bi bi-x-circle-fill me-2"></i> คำสั่งซื้อถูกยกเลิก</h5>
+                <p class="small mb-0 opacity-75">เหตุผล: <?= htmlspecialchars($order['cancel_reason'] ?: 'กรุณาติดต่อเจ้าหน้าที่') ?></p>
+            </div>
+        <?php endif; ?>
 
         <?php if(isset($_GET['success']) && $_GET['success'] == 'received'): ?>
             <div class="alert custom-alert-neon text-center mb-4"><i class="bi bi-patch-check-fill me-2"></i> ขอบคุณสำหรับการยืนยัน! ออเดอร์สำเร็จเรียบร้อยแล้วครับ</div>
