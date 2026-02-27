@@ -2,20 +2,16 @@
 session_start();
 include "connectdb.php";
 
-// เช็คสิทธิ์แอดมิน
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') { 
     header("Location: login.php"); exit(); 
 }
 
 $order_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-// --- [Logic ส่วนจัดการสถานะ]: รองรับการกดเปลี่ยนแบบ AJAX ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_status'])) {
     $new_status = $conn->real_escape_string($_POST['status']);
     $cancel_reason = $conn->real_escape_string($_POST['reason'] ?? '');
-    
     $sql_update = "UPDATE orders SET status = '$new_status', cancel_reason = '$cancel_reason' WHERE id = $order_id";
-    
     if ($conn->query($sql_update)) {
         echo json_encode(["status" => "success"]); exit();
     } else {
@@ -23,10 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_status'])) {
     }
 }
 
-// ดึงข้อมูลออเดอร์มาแสดงผล
 $order_q = $conn->query("SELECT o.*, u.email FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = $order_id");
 $order = $order_q->fetch_assoc();
-
 if (!$order) { die("<div class='text-white p-5'>ไม่พบข้อมูล</div>"); }
 
 $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.variant_image 
@@ -51,15 +45,16 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         .text-neon-cyan { color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
         .text-neon-yellow { color: #ffc107; text-shadow: 0 0 10px #ffc107; }
         .step-btn { transition: 0.3s; border-radius: 50px; font-weight: bold; padding: 10px 20px; }
-        .modal-neon .modal-content { background: rgba(26, 0, 40, 0.95); border: 2px solid #bb86fc; border-radius: 30px; color: #fff; }
+        /* ป๊อปอัพนีออน แทนกรอบขาว */
+        .modal-neon .modal-content { background: rgba(26, 0, 40, 0.95); backdrop-filter: blur(15px); border: 2px solid #bb86fc; border-radius: 30px; color: #fff; }
         .product-img-td { width: 65px; height: 65px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 <div class="container py-5">
-    <div class="d-flex justify-content-between mb-4">
+    <div class="d-flex justify-content-between mb-4 align-items-center">
         <a href="admin_dashboard.php?tab=orders" class="btn btn-outline-light rounded-pill px-4"><i class="bi bi-arrow-left"></i> กลับหน้าหลัก</a>
-        <h2 class="text-neon-pink mb-0">บิล #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></h2>
+        <h2 class="text-neon-pink mb-0 fw-bold">บิล #<?= str_pad($order['id'], 5, '0', STR_PAD_LEFT) ?></h2>
     </div>
 
     <div class="row g-4">
@@ -73,11 +68,7 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
 
             <div class="glass-card border-warning">
                 <h5 class="text-warning border-bottom border-secondary pb-2 mb-3">การชำระเงิน</h5>
-                <p class="mb-3">วิธีชำระ: 
-                    <span class="fw-bold <?= ($order['payment_method'] == 'cod') ? 'text-neon-yellow' : 'text-neon-cyan' ?>">
-                        <?= ($order['payment_method'] == 'cod') ? 'เก็บเงินปลายทาง (COD)' : 'โอนเงินผ่านธนาคาร' ?>
-                    </span>
-                </p>
+                <p class="mb-3">วิธีชำระ: <span class="fw-bold <?= ($order['payment_method'] == 'cod') ? 'text-neon-yellow' : 'text-neon-cyan' ?>"><?= ($order['payment_method'] == 'cod') ? 'เก็บเงินปลายทาง (COD)' : 'โอนเงินผ่านธนาคาร' ?></span></p>
                 <hr class="border-secondary opacity-25">
                 <?php if($order['payment_method'] == 'bank'): ?>
                     <?php if(!empty($order['slip_image'])): ?>
@@ -86,10 +77,7 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
                         <div class="alert alert-secondary py-2 mt-2 small text-center">ลูกค้ายังไม่ได้แนบสลิป</div>
                     <?php endif; ?>
                 <?php else: ?>
-                    <div class="text-center py-4 opacity-75">
-                        <i class="bi bi-truck fs-1 d-block mb-2 text-neon-yellow"></i>
-                        <span class="small d-block fw-bold">ออเดอร์เก็บเงินปลายทาง</span>
-                    </div>
+                    <div class="text-center py-4 opacity-75"><i class="bi bi-truck fs-1 d-block mb-2 text-neon-yellow"></i><span class="small d-block fw-bold">ออเดอร์เก็บเงินปลายทาง</span></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -139,9 +127,9 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         <i id="pIcon" class="bi bi-question-circle text-neon-cyan display-1 mb-4 d-block"></i>
         <h3 class="fw-bold mb-3">ยืนยันการดำเนินการ</h3>
         <p class="opacity-75 mb-4 px-3 fs-5" id="pMessage"></p>
-        <div class="d-flex gap-3 justify-content-center">
-            <button type="button" class="btn btn-outline-light px-4 rounded-pill" data-bs-dismiss=\"modal\">ยกเลิก</button>
-            <button type="button" id="pConfirmBtn" class="btn btn-primary px-4 rounded-pill shadow" style="background: linear-gradient(135deg, #00f2fe, #bb86fc); border:none; color:#000; font-weight:bold;">ตกลง</button>
+        <div class="d-flex gap-3 justify-content-center mt-4">
+            <button type="button" class="btn btn-outline-light px-4 rounded-pill" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" id="pConfirmBtn" class="btn btn-primary px-4 rounded-pill shadow fw-bold" style="background: linear-gradient(135deg, #00f2fe, #bb86fc); border:none; color:#000;">ตกลง</button>
         </div>
     </div></div></div>
 </div>
