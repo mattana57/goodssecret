@@ -9,20 +9,16 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 
 $order_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-// --- [ส่วนที่แก้ไข]: รองรับทั้งการกดบันทึกปกติ และ AJAX (แก้ปัญหาหมุนค้าง) ---
-if (isset($_POST['update_status']) || isset($_POST['ajax_status'])) {
+// --- [Logic ส่วนจัดการสถานะ]: รองรับการกดเปลี่ยนแบบ Step-by-Step ---
+if (isset($_POST['ajax_status'])) {
     $new_status = $conn->real_escape_string($_POST['status']);
-    $cancel_reason = $conn->real_escape_string($_POST['reason'] ?? $_POST['cancel_reason'] ?? '');
+    $cancel_reason = $conn->real_escape_string($_POST['reason'] ?? '');
     
     $sql_update = "UPDATE orders SET status = '$new_status', cancel_reason = '$cancel_reason' WHERE id = $order_id";
     
     if ($conn->query($sql_update)) {
-        // ถ้าส่งมาแบบ AJAX ให้ส่ง JSON กลับไปบอก Javascript ว่าเสร็จแล้ว
-        if (isset($_POST['ajax_status'])) {
-            echo json_encode(["status" => "success"]); exit();
-        }
-        // ถ้ากดปุ่มบันทึกแบบปกติ ให้ Refresh หน้า
-        header("Location: admin_order_view.php?id=$order_id&success=1"); exit();
+        echo json_encode(["status" => "success", "new_val" => $new_status]); 
+        exit();
     }
 }
 
@@ -50,7 +46,13 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name FROM orde
         body { background: #0c001c; color: #ffffff; font-family: 'Segoe UI', sans-serif; }
         .glass-card { background: rgba(255, 255, 255, 0.05); border-radius: 20px; padding: 25px; border: 1px solid rgba(187, 134, 252, 0.2); }
         .text-neon-pink { color: #f107a3; text-shadow: 0 0 10px rgba(241, 7, 163, 0.5); }
+        .text-neon-cyan { color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.5); }
         .slip-img { max-width: 100%; border-radius: 15px; border: 2px solid #00f2fe; cursor: pointer; }
+        
+        /* สไตล์ปุ่มสถานะแบบ Step */
+        .step-btn { transition: 0.3s; border-radius: 50px; font-weight: bold; padding: 10px 20px; }
+        .step-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-check:checked + .btn-outline-primary { background-color: #007bff; color: white; box-shadow: 0 0 15px #007bff; }
     </style>
 </head>
 <body>
@@ -102,63 +104,73 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name FROM orde
             </div>
 
             <div class="glass-card bg-black border-neon-cyan shadow-lg">
-                <h5 class="text-neon-cyan mb-4"><i class="bi bi-gear-fill"></i> จัดการสถานะและเหตุผล</h5>
-                <form id="statusForm" method="POST">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-6">
-                            <label class="small opacity-75">เปลี่ยนสถานะเป็น:</label>
-                            <select name="status" id="statusSelect" class="form-select bg-dark text-white border-secondary mt-1">
-                                <option value="pending" <?= ($order['status'] == 'pending') ? 'selected' : '' ?>>รอตรวจสอบ (ลูกค้าเห็น: รอตรวจสอบ)</option>
-                                <option value="processing" <?= ($order['status'] == 'processing') ? 'selected' : '' ?>>ตรวจสอบสำเร็จ (ลูกค้าเห็น: กำลังจัดส่ง)</option>
-                                <option value="shipped" <?= ($order['status'] == 'shipped') ? 'selected' : '' ?>>จัดส่งสินค้าแล้ว (ลูกค้าได้รับปุ่มยืนยัน)</option>
-                                <option value="delivered" <?= ($order['status'] == 'delivered') ? 'selected' : '' ?>>จัดส่งสำเร็จ (สมบูรณ์)</option>
-                                <option value="cancelled" <?= ($order['status'] == 'cancelled') ? 'selected' : '' ?>>ยกเลิกคำสั่งซื้อ</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6" id="cancelBox" style="display: <?= ($order['status'] == 'cancelled') ? 'block' : 'none' ?>;">
-                            <label class="small text-danger">เหตุผลการยกเลิก:</label>
-                            <input type="text" name="cancel_reason" id="cancel_reason" class="form-control bg-dark text-white border-danger mt-1" value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>" placeholder="แจ้งลูกค้าทราบ...">
-                        </div>
-                        <div class="col-12 mt-4 text-end">
-                            <button type="button" onclick="saveStatus()" id="saveBtn" class="btn btn-success rounded-pill px-5 py-2 fw-bold shadow">บันทึกการอัปเดต</button>
-                        </div>
+                <h5 class="text-neon-cyan mb-4"><i class="bi bi-patch-check-fill"></i> ขั้นตอนการจัดการออเดอร์</h5>
+                
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <button type="button" onclick="quickUpdate('processing')" 
+                        class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">
+                        <i class="bi bi-check2-circle"></i> 1. ยืนยันยอดเงิน (เตรียมส่ง)
+                    </button>
+                    
+                    <button type="button" onclick="quickUpdate('shipped')" 
+                        class="btn <?= $order['status']=='shipped' ? 'btn-info text-dark shadow' : 'btn-outline-info' ?> step-btn px-3">
+                        <i class="bi bi-truck"></i> 2. ส่งสินค้าแล้ว
+                    </button>
+
+                    <button type="button" onclick="quickUpdate('delivered')" 
+                        class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">
+                        <i class="bi bi-flag-fill"></i> 3. ปิดงาน (สำเร็จ)
+                    </button>
+
+                    <button type="button" onclick="toggleCancelBox()" 
+                        class="btn <?= $order['status']=='cancelled' ? 'btn-danger shadow' : 'btn-outline-danger' ?> step-btn px-3 ms-auto">
+                        <i class="bi bi-x-circle"></i> ยกเลิกบิล
+                    </button>
+                </div>
+
+                <div id="cancelReasonInput" style="display:none;" class="mb-3 animate__animated animate__fadeIn">
+                    <label class="small text-danger mb-1">ระบุเหตุผลที่ยกเลิก (ลูกค้าจะเห็นข้อความนี้):</label>
+                    <div class="input-group">
+                        <input type="text" id="reason_text" class="form-control bg-dark text-white border-danger" placeholder="เช่น สินค้าหมด, ไม่แนบสลิปจริง..." value="<?= htmlspecialchars($order['cancel_reason'] ?? '') ?>">
+                        <button class="btn btn-danger" type="button" onclick="quickUpdate('cancelled')">ยืนยันยกเลิก</button>
                     </div>
-                </form>
+                </div>
+                
+                <p class="small opacity-50 mb-0 mt-3 border-top border-secondary pt-2">
+                    สถานะปัจจุบัน: <span class="badge bg-secondary text-uppercase"><?= $order['status'] ?></span>
+                    <span class="ms-2">| ฝั่งลูกค้าจะเห็นตามความคืบหน้าที่คุณกด</span>
+                </p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    $('#statusSelect').change(function() { $('#cancelBox').toggle($(this).val() === 'cancelled'); });
+    // ฟังก์ชันซ่อน/แสดงช่องเหตุผลยกเลิก
+    function toggleCancelBox() { $('#cancelReasonInput').slideToggle(); }
 
-    function saveStatus() {
-        const s = $('#statusSelect').val();
-        const r = $('#cancel_reason').val();
-        const btn = $('#saveBtn');
+    // ฟังก์ชันอัปเดตสถานะแบบรวดเร็ว (เชื่อม AJAX 100%)
+    function quickUpdate(newStatus) {
+        const reason = $('#reason_text').val();
         
-        btn.html('<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...').prop('disabled', true);
+        if(!confirm('ยืนยันการเปลี่ยนสถานะเป็น [' + newStatus + '] ใช่หรือไม่?')) return;
 
-        // ส่งค่าไปที่ PHP เดิมในหน้านี้
         $.post(window.location.href, { 
             ajax_status: 1, 
-            status: s, 
-            reason: r 
+            status: newStatus, 
+            reason: reason 
         }, function(res) {
             try {
                 const data = JSON.parse(res);
                 if(data.status === 'success') {
-                    btn.html('บันทึกสำเร็จ!').addClass('btn-info').removeClass('btn-success');
-                    setTimeout(() => { 
-                        btn.html('บันทึกการอัปเดต').prop('disabled', false).addClass('btn-success').removeClass('btn-info'); 
-                    }, 2000);
+                    // รีโหลดหน้าเพื่อให้สีปุ่มเปลี่ยนตามสถานะใหม่และลูกค้าได้รับข้อมูลทันที
+                    window.location.reload(); 
                 }
             } catch(e) {
-                // ถ้า PHP พ่น error หรือไม่มี JSON กลับมา ให้รีโหลดหน้าไปเลยกันค้าง
                 window.location.reload();
             }
         }).fail(function() {
-            window.location.reload();
+            alert('เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล');
         });
     }
 </script>
