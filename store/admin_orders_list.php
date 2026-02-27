@@ -20,7 +20,7 @@ $orders = $conn->query("SELECT * FROM orders
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="mb-0 text-white-bright fw-bold"><i class="bi bi-receipt me-2"></i> รายการสั่งซื้อล่าสุด</h4>
         <span class="badge bg-info text-dark shadow-sm">
-            <i class="bi bi-filter-left me-1"></i> เรียงตามความสำคัญ (งานค้างอยู่บนสุด)
+            <i class="bi bi-filter-left me-1"></i> 
         </span>
     </div>
     

@@ -105,9 +105,9 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
             <div class="glass-card bg-black border-neon-cyan shadow-lg">
                 <h5 class="text-neon-cyan mb-4 fw-bold"><i class="bi bi-patch-check-fill"></i> จัดการสถานะออเดอร์</h5>
                 <div class="d-flex flex-wrap gap-2 mb-4">
-                    <button type="button" onclick="askUpdate('processing')" class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">1. ยืนยันยอด/บิล</button>
-                    <button type="button" onclick="askUpdate('shipped')" class="btn <?= $order['status']=='shipped' ? 'btn-info text-dark shadow' : 'btn-outline-info' ?> step-btn px-3">2. ส่งสินค้าแล้ว</button>
-                    <button type="button" onclick="askUpdate('delivered')" class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">3. สำเร็จ (ปิดงาน)</button>
+                    <button type="button" onclick="askUpdate('processing')" class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">ยืนยันยอด/บิล</button>
+                    <button type="button" onclick="askUpdate('shipped')" class="btn <?= $order['status']=='shipped' ? 'btn-info text-dark shadow' : 'btn-outline-info' ?> step-btn px-3">ส่งสินค้าแล้ว</button>
+                    <button type="button" onclick="askUpdate('delivered')" class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">สำเร็จ (ปิดงาน)</button>
                     <button type="button" onclick="$('#reasonBox').slideToggle()" class="btn <?= $order['status']=='cancelled' ? 'btn-danger shadow' : 'btn-outline-danger' ?> step-btn ms-auto"><i class="bi bi-x-circle"></i> ยกเลิกบิล</button>
                 </div>
                 <div id="reasonBox" style="<?= $order['status'] == 'cancelled' ? 'display:block;' : 'display:none;' ?>" class="mt-3">
