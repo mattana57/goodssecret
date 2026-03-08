@@ -2,29 +2,27 @@
 session_start();
 include "connectdb.php";
 
-/* ================= [ส่วนที่ปรับเพิ่ม]: แก้ไข SQL ให้สอดคล้องกับ Database ล่าสุด ================= */
+/* ================= [ส่วนที่ปรับเพิ่ม]: แก้ไข SQL ให้ดึงราคาและสต็อกจากรุ่นย่อย ================= */
 $category_slug = $_GET['category'] ?? "";
-$search = $_GET['search'] ?? ""; // รับค่าจากช่องค้นหา
+$search = $_GET['search'] ?? ""; 
 $categories = $conn->query("SELECT * FROM categories ORDER BY name ASC");
 
-$sql = "SELECT products.*, categories.name as category_name, categories.slug FROM products LEFT JOIN categories ON products.category_id = categories.id WHERE 1";
-if($category_slug && $category_slug != "all"){ $sql .= " AND categories.slug = '".$conn->real_escape_string($category_slug)."'"; }
+// ปรับ SQL ให้ดึงราคาต่ำสุด (min_v_price) และสต็อกรวม (total_v_stock) จากรุ่นย่อย
+$sql = "SELECT products.*, categories.name as category_name, categories.slug,
+        (SELECT MIN(price) FROM product_variants WHERE product_id = products.id) as min_v_price,
+        (SELECT SUM(stock) FROM product_variants WHERE product_id = products.id) as total_v_stock
+        FROM products LEFT JOIN categories ON products.category_id = categories.id WHERE 1";
 
-// ปรับให้พิมพ์ตัวเดียวแล้วขึ้น: ใช้ LIKE %...% เพื่อค้นหาชื่อสินค้าที่มีตัวอักษรนั้นอยู่
+if($category_slug && $category_slug != "all"){ $sql .= " AND categories.slug = '".$conn->real_escape_string($category_slug)."'"; }
 if($search){ $sql .= " AND products.name LIKE '%".$conn->real_escape_string($search)."%'"; }
 
 $showLanding = (!$category_slug && !$search);
 if(!$showLanding){ $products = $conn->query($sql); }
 
-// 1. ปรับดึงสินค้าแนะนำจากคอลัมน์ is_hot แทน featured (เพื่อให้ตรงกับ Database)
-$recommended = $conn->query("SELECT * FROM products WHERE is_hot=1 LIMIT 8");
+// ดึงสินค้าแนะนำและมาใหม่ โดยดึงราคาต่ำสุดมาด้วย
+$recommended = $conn->query("SELECT p.*, (SELECT MIN(price) FROM product_variants WHERE product_id = p.id) as min_v_price FROM products p WHERE p.is_hot=1 LIMIT 8");
+$newArrival = $conn->query("SELECT p.*, (SELECT MIN(price) FROM product_variants WHERE product_id = p.id) as min_v_price FROM products p WHERE p.is_hot=0 ORDER BY p.id DESC LIMIT 8");
 
-// 2. ปรับสินค้ามาใหม่ให้ไม่ซ้ำกับสินค้าแนะนำ (เพิ่ม WHERE is_hot=0)
-$newArrival = $conn->query("SELECT * FROM products WHERE is_hot=0 ORDER BY id DESC LIMIT 8");
-
-$discountProducts = $conn->query("SELECT * FROM products WHERE discount > 0 LIMIT 8");
-
-/* --- ส่วนนับจำนวนสินค้าในตะกร้า --- */
 $cart_count = 0;
 if(isset($_SESSION['user_id'])){
     $u_id = $_SESSION['user_id'];
@@ -158,12 +156,14 @@ body {
     <?php if($showLanding){ ?>
         <h4 class="section-title">⭐ สินค้าแนะนำ</h4>
         <div class="row mb-5">
-            <?php while($p = $recommended->fetch_assoc()){ ?>
+            <?php while($p = $recommended->fetch_assoc()){ 
+                $price_text = ($p['min_v_price'] > 0) ? "เริ่มต้น ฿".number_format($p['min_v_price']) : "฿".number_format($p['price']);
+            ?>
             <div class="col-md-3 mb-4">
                 <div class="card product-card p-3 text-center h-100" onclick="location.href='product.php?id=<?= $p['id'] ?>'">
                     <img src="images/<?= $p['image']; ?>" class="img-fluid mb-2 rounded-4" style="height:200px; object-fit:cover;" onerror="this.src='https://via.placeholder.com/200'">
                     <h6 class="text-truncate px-2 text-white"><?= $p['name']; ?></h6>
-                    <p class="text-info fw-bold mb-3"><?= number_format($p['price']); ?> บาท</p>
+                    <p class="text-info fw-bold mb-3"><?= $price_text; ?> บาท</p>
                     <div class="mt-auto d-flex gap-2 p-2" onclick="event.stopPropagation();">
                         <button onclick="addToCart(<?= $p['id'] ?>)" class="btn btn-neon-purple btn-sm w-50 py-2">ลงตะกร้า</button>
                         <a href="add_to_cart.php?id=<?= $p['id'] ?>&action=buy" class="btn btn-neon-pink btn-sm w-50 py-2 d-flex align-items-center justify-content-center text-decoration-none">สั่งซื้อ</a>
@@ -175,12 +175,14 @@ body {
 
         <h4 class="section-title">🆕 สินค้ามาใหม่</h4>
         <div class="row mb-5">
-            <?php while($p = $newArrival->fetch_assoc()){ ?>
+            <?php while($p = $newArrival->fetch_assoc()){ 
+                $price_text = ($p['min_v_price'] > 0) ? "เริ่มต้น ฿".number_format($p['min_v_price']) : "฿".number_format($p['price']);
+            ?>
             <div class="col-md-3 mb-4">
                 <div class="card product-card p-3 text-center h-100" onclick="location.href='product.php?id=<?= $p['id'] ?>'">
                     <img src="images/<?= $p['image']; ?>" class="img-fluid mb-2 rounded-4" style="height:200px; object-fit:cover;" onerror="this.src='https://via.placeholder.com/200'">
                     <h6 class="text-truncate px-2 text-white"><?= $p['name']; ?></h6>
-                    <p class="text-info fw-bold mb-3"><?= number_format($p['price']); ?> บาท</p>
+                    <p class="text-info fw-bold mb-3"><?= $price_text; ?> บาท</p>
                     <div class="mt-auto d-flex gap-2 p-2" onclick="event.stopPropagation();">
                         <button onclick="addToCart(<?= $p['id'] ?>)" class="btn btn-neon-purple btn-sm w-50 py-2">ลงตะกร้า</button>
                         <a href="add_to_cart.php?id=<?= $p['id'] ?>&action=buy" class="btn btn-neon-pink btn-sm w-50 py-2 d-flex align-items-center justify-content-center text-decoration-none">สั่งซื้อ</a>
@@ -192,12 +194,14 @@ body {
     <?php } else { ?>
         <h4 class="section-title">🔍 ผลลัพธ์การค้นหา</h4>
         <div class="row">
-            <?php while($p = $products->fetch_assoc()){ ?>
+            <?php while($p = $products->fetch_assoc()){ 
+                $price_text = ($p['min_v_price'] > 0) ? "เริ่มต้น ฿".number_format($p['min_v_price']) : "฿".number_format($p['price']);
+            ?>
             <div class="col-md-3 mb-4">
                 <div class="card product-card p-3 text-center h-100" onclick="location.href='product.php?id=<?= $p['id'] ?>'">
                     <img src="images/<?= $p['image']; ?>" class="img-fluid mb-2 rounded-4" style="height:200px; object-fit:cover;">
                     <h6 class="text-truncate px-2 text-white"><?= $p['name']; ?></h6>
-                    <p class="text-info fw-bold mb-3"><?= number_format($p['price']); ?> บาท</p>
+                    <p class="text-info fw-bold mb-3"><?= $price_text; ?> บาท</p>
                     <div class="mt-auto d-flex gap-2 p-2" onclick="event.stopPropagation();">
                         <button onclick="addToCart(<?= $p['id'] ?>)" class="btn btn-neon-purple btn-sm w-50 py-2">ลงตะกร้า</button>
                         <a href="add_to_cart.php?id=<?= $p['id'] ?>&action=buy" class="btn btn-neon-pink btn-sm w-50 py-2 d-flex align-items-center justify-content-center text-decoration-none">สั่งซื้อ</a>
