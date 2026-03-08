@@ -81,7 +81,7 @@ $variants = $conn->query("SELECT * FROM product_variants WHERE product_id=$id");
 <body>
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-info"><i class="bi bi-pencil-square me-2"></i>จัดการสินค้าหลัก & รุ่นย่อย</h2>
+        <h2 class="text-info"><i class="bi bi-pencil-square me-2"></i>จัดการสินค้า</h2>
         <a href="admin_dashboard.php" class="btn btn-back"><i class="bi bi-arrow-left me-2"></i>กลับหน้าแดชบอร์ด</a>
     </div>
 
