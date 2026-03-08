@@ -1,5 +1,5 @@
 <?php
-// ห้าม include "admin_dashboard.php" หรือ "connectdb.php" ซ้ำในนี้
+// ห้าม include "admin_dashboard.php" หรือ "connectdb.php" ซ้ำในนี้เด็ดขาด
 // เพราะไฟล์ admin_dashboard.php (ไฟล์แม่) ทำไว้ให้แล้ว
 
 $sql_p = "SELECT p.*, c.name AS cat_name 
@@ -7,7 +7,7 @@ $sql_p = "SELECT p.*, c.name AS cat_name
           LEFT JOIN categories c ON p.category_id = c.id 
           ORDER BY p.id DESC";
 
-$result_p = $conn->query($sql_p); // ใช้ $conn จากไฟล์แม่ได้เลย
+$result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จากไฟล์แม่ได้เลย
 ?>
 
 <div class="glass-panel">
@@ -34,7 +34,7 @@ $result_p = $conn->query($sql_p); // ใช้ $conn จากไฟล์แม
                     <?php while($row = $result_p->fetch_assoc()): ?>
                     <tr>
                         <td>
-                            <img src="uploads/<?= $row['image'] ?>" class="rounded" 
+                            <img src="images/<?= $row['image'] ?>" class="rounded" 
                                  style="width: 50px; height: 50px; object-fit: cover; border: 1px solid rgba(187, 134, 252, 0.4);" 
                                  onerror="this.src='https://via.placeholder.com/50'">
                         </td>
