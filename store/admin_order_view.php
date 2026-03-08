@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_status'])) {
     
     $cancel_sql = "";
     if($new_status === 'cancelled') {
+        // [จุดที่แก้]: ต้องระบุชัดเจนว่าเป็น admin เท่านั้นที่กดยกเลิกจากหน้านี้
         $cancel_sql = ", cancel_by = 'admin', cancel_reason = '$cancel_reason'";
     } else {
         $cancel_sql = ", cancel_reason = ''";
@@ -56,39 +57,35 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         .product-img-td { width: 65px; height: 65px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
         .alert-neon-danger { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 15px; }
 
-        /* [ปรับแต่งใหม่]: สไตล์ป๊อปอัพสีสันสวยงามตามใจมึง */
+        /* [ปรับเพิ่ม]: สไตล์ป๊อปอัพให้เนียนกริบกับธีมม่วงนีออน */
         .swal2-popup {
-            background: #1a0028 !important;
-            border: 2px solid #bb86fc !important;
+            background: #1a0028 !important; /* พื้นหลังม่วงเข้มมืด */
+            border: 2px solid #bb86fc !important; /* ขอบนีออนม่วงสว่าง */
             border-radius: 30px !important;
-            box-shadow: 0 0 25px rgba(187, 134, 252, 0.3) !important;
+            box-shadow: 0 0 30px rgba(187, 134, 252, 0.3) !important;
         }
-        .swal2-title { color: #ffffff !important; font-size: 1.8rem !important; }
+        .swal2-title { color: #ffffff !important; font-weight: 700 !important; }
         .swal2-input { 
-            background: rgba(0, 0, 0, 0.4) !important; 
-            border: 1px solid #00f2fe !important; 
-            color: #fff !important;
-            border-radius: 15px !important;
+            background: rgba(0, 0, 0, 0.3) !important; 
+            border: 1px solid rgba(187, 134, 252, 0.5) !important; 
+            color: #fff !important; 
+            border-radius: 12px !important;
         }
+        .swal2-input:focus { border-color: #00f2fe !important; box-shadow: 0 0 10px rgba(0, 242, 254, 0.3) !important; }
         
-        /* ปุ่มยืนยันสีฟ้า (Neon Cyan) */
-        .btn-swal-confirm {
-            background: #2582d1 !important;
+        /* สไตล์ปุ่มในป๊อปอัพ */
+        .custom-swal-confirm {
+            background: #2582d1 !important; /* สีฟ้าตามรูปต้นฉบับของมึง */
             color: #fff !important;
-            border-radius: 10px !important;
-            padding: 12px 30px !important;
+            border-radius: 8px !important;
+            padding: 10px 25px !important;
             font-weight: bold !important;
-            box-shadow: 0 4px 15px rgba(37, 130, 209, 0.4) !important;
-            margin: 10px !important;
         }
-        /* ปุ่มยกเลิกสีเทาเข้ม */
-        .btn-swal-cancel {
-            background: #545b62 !important;
+        .custom-swal-cancel {
+            background: #6e7881 !important; /* สีเทาตามรูปต้นฉบับของมึง */
             color: #fff !important;
-            border-radius: 10px !important;
-            padding: 12px 30px !important;
-            font-weight: bold !important;
-            margin: 10px !important;
+            border-radius: 8px !important;
+            padding: 10px 25px !important;
         }
     </style>
 </head>
@@ -107,11 +104,14 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
                 <p class="small mb-1 text-white-50">โทร: <?= htmlspecialchars($order['phone']) ?></p>
                 <p class="small mb-0 text-white-50">ที่อยู่: <?= htmlspecialchars($order['address']) ?> <?= htmlspecialchars($order['province']) ?> <?= htmlspecialchars($order['zipcode']) ?></p>
             </div>
+
             <div class="glass-card border-warning shadow">
                 <h5 class="text-warning border-bottom border-white border-opacity-10 pb-2 mb-3">การชำระเงิน</h5>
                 <p class="mb-3">วิธีชำระ: <span class="fw-bold <?= ($order['payment_method'] == 'cod') ? 'text-warning' : 'text-neon-cyan' ?>"><?= strtoupper($order['payment_method']) ?></span></p>
                 <?php if($order['payment_method'] == 'bank' && !empty($order['slip_image'])): ?>
                     <img src="slips/<?= $order['slip_image'] ?>" class="w-100 rounded-3 border border-info shadow-sm" onclick="window.open(this.src)" style="cursor:pointer">
+                <?php else: ?>
+                    <div class="text-center py-4 opacity-75"><i class="bi bi-truck fs-1 d-block mb-2 text-warning"></i><span class="small d-block fw-bold">เก็บเงินปลายทาง</span></div>
                 <?php endif; ?>
             </div>
         </div>
@@ -120,7 +120,7 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
             <?php if($order['status'] == 'cancelled'): ?>
                 <div class="alert alert-neon-danger mb-4 shadow">
                     <i class="bi bi-x-circle-fill me-2"></i> <strong>ออเดอร์นี้ถูกยกเลิกโดย <?= ($order['cancel_by'] == 'admin') ? 'แอดมิน' : 'ลูกค้า' ?>:</strong> 
-                    <?= htmlspecialchars($order['cancel_reason']) ?>
+                    <?= htmlspecialchars($order['cancel_reason'] ?: 'ไม่ได้ระบุเหตุผล') ?>
                 </div>
             <?php endif; ?>
 
@@ -133,7 +133,7 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
                         ?>
                         <tr class="align-middle border-bottom border-white border-opacity-10">
                             <td style="width: 80px;"><img src="images/<?= htmlspecialchars($display_img) ?>" class="product-img-td"></td>
-                            <td><span class="fw-bold d-block"><?= htmlspecialchars($item['name']) ?></span><small class="text-neon-cyan"><?= $item['variant_name'] ?></small></td>
+                            <td><span class="fw-bold d-block"><?= htmlspecialchars($item['name']) ?></span><small class="text-neon-cyan"><?= $item['variant_name'] ?: 'ไม่มีรุ่นย่อย' ?></small></td>
                             <td class="text-center">x <?= $item['quantity'] ?></td>
                             <td class="text-end text-neon-cyan fw-bold">฿<?= number_format($item['price'] * $item['quantity']) ?></td>
                         </tr>
@@ -145,11 +145,12 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
             <div class="glass-card bg-black border-neon-cyan shadow-lg">
                 <h5 class="text-neon-cyan mb-4 fw-bold"><i class="bi bi-patch-check-fill"></i> จัดการสถานะออเดอร์</h5>
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" onclick="updateStatus('processing')" class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn px-3">ยืนยันยอด</button>
-                    <button type="button" onclick="updateStatus('shipped')" class="btn <?= $order['status']=='shipped' ? 'btn-info shadow' : 'btn-outline-info' ?> step-btn px-3">ส่งสินค้าแล้ว</button>
-                    <button type="button" onclick="updateStatus('delivered')" class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn px-3">สำเร็จ (ปิดงาน)</button>
+                    <button type="button" onclick="updateStatus('processing')" class="btn <?= $order['status']=='processing' ? 'btn-primary shadow' : 'btn-outline-primary' ?> step-btn">ยืนยันยอด</button>
+                    <button type="button" onclick="updateStatus('shipped')" class="btn <?= $order['status']=='shipped' ? 'btn-info shadow' : 'btn-outline-info' ?> step-btn">ส่งสินค้าแล้ว</button>
+                    <button type="button" onclick="updateStatus('delivered')" class="btn <?= $order['status']=='delivered' ? 'btn-success shadow' : 'btn-outline-success' ?> step-btn">สำเร็จ (ปิดงาน)</button>
                     <button type="button" onclick="cancelByAdmin()" class="btn <?= $order['status']=='cancelled' ? 'btn-danger shadow' : 'btn-outline-danger' ?> step-btn ms-auto"><i class="bi bi-x-circle"></i> ยกเลิกบิล</button>
                 </div>
+                <p class="small opacity-50 mb-0 mt-3 border-top border-secondary pt-2">สถานะปัจจุบัน: <span class="badge bg-secondary"><?= strtoupper($order['status']) ?></span></p>
             </div>
         </div>
     </div>
@@ -158,16 +159,20 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    /* [ปรับแต่ง]: ป๊อปอัพยืนยันทั่วไปให้เข้าธีม */
     function updateStatus(newStatus) {
         Swal.fire({
-            title: 'เปลี่ยนสถานะ?',
-            text: "ยืนยันการเปลี่ยนสถานะเป็น [" + newStatus.toUpperCase() + "]",
+            title: 'ยืนยันการเปลี่ยนสถานะ?',
+            text: "ต้องการเปลี่ยนสถานะเป็น [" + newStatus.toUpperCase() + "] ใช่หรือไม่?",
             icon: 'question',
             iconColor: '#00f2fe',
             showCancelButton: true,
-            confirmButtonText: 'ยืนยัน',
+            confirmButtonText: 'ตกลง',
             cancelButtonText: 'ยกเลิก',
-            customClass: { confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' },
+            customClass: {
+                confirmButton: 'custom-swal-confirm',
+                cancelButton: 'custom-swal-cancel'
+            },
             buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
@@ -178,10 +183,11 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         });
     }
 
+    /* [ปรับแต่ง]: ป๊อปอัพยกเลิกพร้อมช่องกรอกเหตุผลให้สวยงามตามรูป */
     function cancelByAdmin() {
         Swal.fire({
             title: 'ยกเลิกคำสั่งซื้อ',
-            html: '<p style="color:rgba(255,255,255,0.6);">ระบุเหตุผลการยกเลิกโดยแอดมิน</p>',
+            html: '<p style="color:rgba(255,255,255,0.6); font-size:0.9rem;">ระบุเหตุผลการยกเลิกโดยแอดมิน</p>',
             input: 'text',
             inputPlaceholder: 'เช่น สินค้าหมด หรือ ข้อมูลที่อยู่ไม่ชัดเจน...',
             icon: 'warning',
@@ -189,13 +195,26 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
             showCancelButton: true,
             confirmButtonText: 'ยืนยันการยกเลิก',
             cancelButtonText: 'ย้อนกลับ',
-            customClass: { confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' },
+            customClass: {
+                confirmButton: 'custom-swal-confirm',
+                cancelButton: 'custom-swal-cancel'
+            },
             buttonsStyling: false
         }).then((result) => {
-            if (result.isConfirmed && result.value) {
-                $.post(window.location.href, { ajax_status: 1, status: 'cancelled', reason: result.value }, function() {
-                    window.location.reload();
-                });
+            if (result.isConfirmed) {
+                if (result.value) {
+                    $.post(window.location.href, { ajax_status: 1, status: 'cancelled', reason: result.value }, function() {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({ 
+                        title: 'ผิดพลาด', 
+                        text: 'กรุณาระบุเหตุผลการยกเลิก', 
+                        icon: 'error',
+                        customClass: { confirmButton: 'custom-swal-confirm' },
+                        buttonsStyling: false
+                    });
+                }
             }
         });
     }
