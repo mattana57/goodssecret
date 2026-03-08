@@ -39,7 +39,7 @@ if (isset($_POST['update_slip']) && isset($_FILES['slip_image'])) {
     if ($file['error'] === 0) {
         $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
         $new_name = "slip_" . $order_id . "_" . time() . "." . $ext;
-        if (move_uploaded_file($file['tmp_name'], "uploads/slips/" . $new_name)) {
+        if (move_uploaded_file($file['tmp_name'], "slips/" . $new_name)) {
             $conn->query("UPDATE orders SET slip_image = '$new_name' WHERE id = $order_id AND user_id = $user_id");
             header("Location: order_detail.php?id=$order_id&success=slip"); exit();
         }
@@ -107,7 +107,7 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
                     <p class="small mb-3">วิธีชำระ: <b><?= $order['payment_method'] == 'bank' ? 'โอนเงิน' : 'เก็บปลายทาง' ?></b></p>
                     <?php if($order['payment_method'] == 'bank'): ?>
                         <?php if(!empty($order['slip_image'])): ?>
-                            <img src="uploads/slips/<?= $order['slip_image'] ?>" class="w-50 rounded-3 border border-info mb-3" onclick="window.open(this.src)" style="cursor:pointer">
+                            <img src="slips/<?= $order['slip_image'] ?>" class="w-50 rounded-3 border border-info mb-3" onclick="window.open(this.src)" style="cursor:pointer">
                         <?php endif; ?>
                         <?php if(in_array($order['status'], ['pending', 'processing'])): ?>
                             <form method="POST" enctype="multipart/form-data"><input type="file" name="slip_image" onchange="this.form.submit()" hidden id="s"><label for="s" class="btn btn-sm btn-outline-purple w-100 rounded-pill">แนบสลิปใหม่</label><input type="hidden" name="update_slip"></form>

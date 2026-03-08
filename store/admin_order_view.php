@@ -69,7 +69,7 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
                 <h5 class="text-warning border-bottom border-white border-opacity-10 pb-2 mb-3">การชำระเงิน</h5>
                 <p class="mb-3">วิธีชำระ: <span class="fw-bold <?= ($order['payment_method'] == 'cod') ? 'text-warning' : 'text-neon-cyan' ?>"><?= strtoupper($order['payment_method']) ?></span></p>
                 <?php if($order['payment_method'] == 'bank' && !empty($order['slip_image'])): ?>
-                    <img src="uploads/slips/<?= $order['slip_image'] ?>" class="w-100 rounded-3 border border-info" onclick="window.open(this.src)" style="cursor:pointer">
+                    <img src="slips/<?= $order['slip_image'] ?>" class="w-100 rounded-3 border border-info" onclick="window.open(this.src)" style="cursor:pointer">
                 <?php else: ?>
                     <div class="text-center py-4 opacity-75"><i class="bi bi-truck fs-1 d-block mb-2 text-warning"></i><span class="small d-block fw-bold">เก็บเงินปลายทาง</span></div>
                 <?php endif; ?>
