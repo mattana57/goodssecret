@@ -1,11 +1,12 @@
 <?php
-// --- [Logic 1]: บันทึก/อัปเดต ข้อมูลสินค้า ---
+// --- [Logic 1]: ส่วนบันทึกและอัปเดตข้อมูล (คงเดิมแต่เพิ่มการรับค่า UPDATE) ---
 if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
     $cat_id = intval($_POST['category_id']);
     $desc = $conn->real_escape_string($_POST['description'] ?? '');
     $is_variant = $_POST['is_variant'];
     
+    // จัดการรูปภาพหลัก
     $img_name = $_POST['existing_image'] ?? "default.png";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = time() . "_" . basename($_FILES['image']['name']);
@@ -23,6 +24,7 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
         $p_id = $conn->insert_id;
     }
 
+    // จัดการรุ่นย่อย (Variants)
     if($is_variant == 'yes' && isset($_POST['v_names'])) {
         foreach($_POST['v_names'] as $i => $vname) {
             $v_id = $_POST['v_ids'][$i] ?? 'new';
@@ -46,7 +48,7 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     echo "<script>window.location='admin_dashboard.php?tab=products&success=1';</script>";
 }
 
-// --- [Logic 2]: AJAX ดึงข้อมูลสินค้ามาใส่ใน Modal แก้ไข ---
+// --- [Logic 2]: ส่วน AJAX เพื่อดึงข้อมูล JSON มาใส่ในช่องแก้ไข (ห้ามลบ) ---
 if (isset($_GET['get_product_json'])) {
     $id = intval($_GET['get_product_json']);
     $p = $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc();
@@ -59,7 +61,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 ?>
 
 <style>
-    /* ปรับแต่งความสว่างตัวหนังสือและธีมนีออน */
+    /* สไตล์ความสว่างตัวหนังสือและนีออน */
     .text-white-bright { color: #ffffff !important; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
     .btn-edit-neon { border: 1px solid #ffc107 !important; color: #ffc107 !important; background: transparent !important; }
@@ -106,7 +108,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 
 <div class="modal fade" id="pModalFull" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <form class="modal-content" style="background: #1a0028; border: 2px solid #bb86fc; border-radius: 25px;" method="POST" enctype="multipart/form-data">
+        <form class="modal-content shadow-lg" style="background: #1a0028; border: 2px solid #bb86fc; border-radius: 25px;" method="POST" enctype="multipart/form-data">
             <div class="modal-header border-secondary px-4">
                 <h4 class="text-neon-purple fw-bold mb-0"><i class="bi bi-pencil-square me-2"></i><span id="modal_title">คลังสินค้า</span></h4>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -148,13 +150,13 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 </div>
 
 <script>
-// ฟังก์ชันสลับการแสดงผลรุ่นย่อย
+// --- [JavaScript]: ส่วนควบคุมปุ่มกด (ID และชื่อฟังก์ชันต้องห้ามแก้) ---
+
 function toggleVariantDisplay(val) {
     if (val === 'yes') { $('#variant_section_box').slideDown(); $('#no_variant_row').slideUp(); } 
     else { $('#variant_section_box').slideUp(); $('#no_variant_row').slideDown(); }
 }
 
-// ฟังก์ชันเปิด Modal สำหรับเพิ่มสินค้าใหม่
 function openAddModal() {
     $('#modal_title').text('เพิ่มสินค้าใหม่');
     $('#btn_submit_product').attr('name', 'save_product').text('บันทึกข้อมูลเข้าคลัง');
@@ -162,12 +164,14 @@ function openAddModal() {
     $('#form_p_id').val('');
     $('#variant_list_container').empty();
     toggleVariantDisplay('no');
-    new bootstrap.Modal(document.getElementById('pModalFull')).show();
+    // คำสั่งเปิด Modal
+    var myModal = new bootstrap.Modal(document.getElementById('pModalFull'));
+    myModal.show();
 }
 
-// [หัวใจสำคัญ]: ฟังก์ชันเปิด Modal สำหรับแก้ไขข้อมูล
 function openEditModal(pid) {
     $('#variant_list_container').empty();
+    // ดึงข้อมูลผ่าน AJAX
     $.getJSON('admin_products.php', { get_product_json: pid }, function(data) {
         $('#modal_title').text('แก้ไขข้อมูลสินค้า');
         $('#btn_submit_product').attr('name', 'update_product').text('อัปเดตข้อมูลสินค้า');
@@ -186,7 +190,9 @@ function openEditModal(pid) {
             $('#form_price').val(data.product.price);
             $('#form_stock').val(data.product.stock);
         }
-        new bootstrap.Modal(document.getElementById('pModalFull')).show();
+        // คำสั่งเปิด Modal หลังดึงข้อมูลเสร็จ
+        var myModal = new bootstrap.Modal(document.getElementById('pModalFull'));
+        myModal.show();
     });
 }
 
