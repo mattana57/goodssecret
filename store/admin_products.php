@@ -1,10 +1,14 @@
 <?php
-// ไฟล์นี้ไม่ต้อง include "connectdb.php" หรือ session_start() ซ้ำ เพราะหน้าหลักทำไว้แล้ว
-$sql = "SELECT p.*, c.name AS cat_name 
-        FROM products p 
-        LEFT JOIN categories c ON p.category_id = c.id 
-        ORDER BY p.id DESC";
-$result = $conn->query($sql);
+// 1. ห้าม include "connectdb.php" หรือ session_start() ซ้ำ
+// 2. ใช้คำสั่ง SQL ให้ตรงกับตารางในฐานข้อมูลของคุณ
+
+$sql_p = "SELECT p.*, c.name AS cat_name 
+          FROM products p 
+          LEFT JOIN categories c ON p.category_id = c.id 
+          ORDER BY p.id DESC";
+
+// 3. ใช้ $conn->query ตามแบบที่ไฟล์ admin_dashboard.php กำหนดไว้
+$result_p = $conn->query($sql_p); 
 ?>
 
 <div class="glass-panel">
@@ -27,10 +31,16 @@ $result = $conn->query($sql);
                 </tr>
             </thead>
             <tbody>
-                <?php while($row = $result->fetch_assoc()): ?>
+                <?php 
+                // ตรวจสอบว่ามีข้อมูลก่อนวนลูป เพื่อป้องกัน Error
+                if ($result_p && $result_p->num_rows > 0): 
+                    while($row = $result_p->fetch_assoc()): 
+                ?>
                 <tr>
                     <td>
-                        <img src="uploads/<?= $row['image'] ?>" class="rounded" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid rgba(187, 134, 252, 0.5);" onerror="this.src='https://via.placeholder.com/50'">
+                        <img src="uploads/<?= $row['image'] ?>" class="rounded" 
+                             style="width: 50px; height: 50px; object-fit: cover; border: 1px solid rgba(187, 134, 252, 0.4);" 
+                             onerror="this.src='https://via.placeholder.com/50'">
                     </td>
                     <td>
                         <div class="fw-bold"><?= $row['name'] ?></div>
@@ -44,16 +54,21 @@ $result = $conn->query($sql);
                     </td>
                     <td class="text-center">
                         <a href="edit_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning border-0">
-                            <i class="bi bi-pencil-square"></i>
+                            <i class="bi bi-pencil-square fs-5"></i>
                         </a>
                         <a href="admin_dashboard.php?del_id=<?= $row['id'] ?>&type=product&tab=products" 
                            class="btn btn-sm btn-outline-danger border-0" 
-                           onclick="return confirm('ยืนยันการลบสินค้า?')">
-                            <i class="bi bi-trash"></i>
+                           onclick="return confirm('ยืนยันการลบ?')">
+                            <i class="bi bi-trash fs-5"></i>
                         </a>
                     </td>
                 </tr>
-                <?php endwhile; ?>
+                <?php 
+                    endwhile; 
+                else: 
+                ?>
+                <tr><td colspan="5" class="text-center py-5 opacity-50">ไม่พบข้อมูลสินค้าในระบบ</td></tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
