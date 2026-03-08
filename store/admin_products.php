@@ -13,6 +13,18 @@ $sql_p = "SELECT p.*, c.name AS cat_name,
 $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จากไฟล์แม่ได้เลย
 ?>
 
+<link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
+
+<style>
+    /* ปรับแต่งสไตล์ของ SweetAlert ให้เข้ากับธีมร้าน */
+    .swal2-popup {
+        border: 2px solid #f107a3 !important;
+        border-radius: 25px !important;
+        background: #1a0028 !important;
+        font-family: 'Segoe UI', sans-serif;
+    }
+</style>
+
 <div class="glass-panel">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="text-neon-cyan"><i class="bi bi-box-seam me-2"></i>สินค้า & สต็อก</h4>
@@ -46,7 +58,7 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
                                  onerror="this.src='https://via.placeholder.com/50'">
                         </td>
                         <td>
-                            <div class="fw-bold"><?= $row['name'] ?></div>
+                            <div class="fw-bold text-white"><?= $row['name'] ?></div>
                             <small class="text-white-50">หมวดหมู่: <?= $row['cat_name'] ?? 'ทั่วไป' ?></small>
                         </td>
                         <td class="text-neon-cyan fw-bold">
@@ -61,9 +73,9 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
                             <a href="edit_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning border-0">
                                 <i class="bi bi-pencil-square fs-5"></i>
                             </a>
-                            <a href="admin_dashboard.php?del_id=<?= $row['id'] ?>&type=product&tab=products" 
-                               class="btn btn-sm btn-outline-danger border-0" 
-                               onclick="return confirm('ยืนยันการลบสินค้า?')">
+                            <a href="javascript:void(0)" 
+                               onclick="confirmDeleteProduct(<?= $row['id'] ?>, '<?= htmlspecialchars($row['name']) ?>')"
+                               class="btn btn-sm btn-outline-danger border-0">
                                 <i class="bi bi-trash fs-5"></i>
                             </a>
                         </td>
@@ -76,3 +88,24 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
         </table>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function confirmDeleteProduct(productId, productName) {
+    Swal.fire({
+        title: 'ยืนยันการลบสินค้า?',
+        text: "คุณกำลังจะลบ [" + productName + "] ข้อมูลนี้ไม่สามารถกู้คืนได้!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f107a3',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: 'ยืนยันการลบ',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // ส่งไปที่ URL ลบสินค้าเดิมของคุณ
+            window.location.href = "admin_dashboard.php?del_id=" + productId + "&type=product&tab=products";
+        }
+    });
+}
+</script>
