@@ -271,6 +271,7 @@ function openEditModal(pid) {
     $('#btn_submit_product').attr('name', 'update_product').text('อัปเดตข้อมูลสินค้า');
     $('#variant_list_container').empty();
 
+    // แก้ไขจุดนี้: ระบุไฟล์ admin_products.php โดยตรงเพื่อให้ AJAX ทำงานได้แม้รันผ่านหน้าอื่น
     $.getJSON('admin_products.php', { get_product_json: pid }, function(data) {
         $('#form_p_id').val(data.product.id);
         $('#form_name').val(data.product.name);
@@ -288,6 +289,8 @@ function openEditModal(pid) {
             $('#form_stock').val(data.product.stock);
         }
         new bootstrap.Modal(document.getElementById('pModalFull')).show();
+    }).fail(function() {
+        alert("ไม่สามารถดึงข้อมูลได้");
     });
 }
 
