@@ -1,14 +1,13 @@
 <?php
-// 1. ห้าม include "connectdb.php" หรือ session_start() ซ้ำ
-// 2. ใช้คำสั่ง SQL ให้ตรงกับตารางในฐานข้อมูลของคุณ
+// ห้าม include "admin_dashboard.php" หรือ "connectdb.php" ซ้ำในนี้เด็ดขาด
+// เพราะไฟล์ admin_dashboard.php (ไฟล์แม่) ทำไว้ให้แล้ว
 
 $sql_p = "SELECT p.*, c.name AS cat_name 
           FROM products p 
           LEFT JOIN categories c ON p.category_id = c.id 
           ORDER BY p.id DESC";
 
-// 3. ใช้ $conn->query ตามแบบที่ไฟล์ admin_dashboard.php กำหนดไว้
-$result_p = $conn->query($sql_p); 
+$result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จากไฟล์แม่ได้เลย
 ?>
 
 <div class="glass-panel">
@@ -31,43 +30,38 @@ $result_p = $conn->query($sql_p);
                 </tr>
             </thead>
             <tbody>
-                <?php 
-                // ตรวจสอบว่ามีข้อมูลก่อนวนลูป เพื่อป้องกัน Error
-                if ($result_p && $result_p->num_rows > 0): 
-                    while($row = $result_p->fetch_assoc()): 
-                ?>
-                <tr>
-                    <td>
-                        <img src="uploads/<?= $row['image'] ?>" class="rounded" 
-                             style="width: 50px; height: 50px; object-fit: cover; border: 1px solid rgba(187, 134, 252, 0.4);" 
-                             onerror="this.src='https://via.placeholder.com/50'">
-                    </td>
-                    <td>
-                        <div class="fw-bold"><?= $row['name'] ?></div>
-                        <small class="text-white-50">หมวดหมู่: <?= $row['cat_name'] ?? 'ทั่วไป' ?></small>
-                    </td>
-                    <td class="text-neon-cyan fw-bold">฿<?= number_format($row['price']) ?></td>
-                    <td>
-                        <span class="badge rounded-pill bg-dark border border-secondary px-3">
-                            <?= $row['stock'] ?> ชิ้น
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <a href="edit_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning border-0">
-                            <i class="bi bi-pencil-square fs-5"></i>
-                        </a>
-                        <a href="admin_dashboard.php?del_id=<?= $row['id'] ?>&type=product&tab=products" 
-                           class="btn btn-sm btn-outline-danger border-0" 
-                           onclick="return confirm('ยืนยันการลบ?')">
-                            <i class="bi bi-trash fs-5"></i>
-                        </a>
-                    </td>
-                </tr>
-                <?php 
-                    endwhile; 
-                else: 
-                ?>
-                <tr><td colspan="5" class="text-center py-5 opacity-50">ไม่พบข้อมูลสินค้าในระบบ</td></tr>
+                <?php if ($result_p && $result_p->num_rows > 0): ?>
+                    <?php while($row = $result_p->fetch_assoc()): ?>
+                    <tr>
+                        <td>
+                            <img src="uploads/<?= $row['image'] ?>" class="rounded" 
+                                 style="width: 50px; height: 50px; object-fit: cover; border: 1px solid rgba(187, 134, 252, 0.4);" 
+                                 onerror="this.src='https://via.placeholder.com/50'">
+                        </td>
+                        <td>
+                            <div class="fw-bold"><?= $row['name'] ?></div>
+                            <small class="text-white-50">หมวดหมู่: <?= $row['cat_name'] ?? 'ทั่วไป' ?></small>
+                        </td>
+                        <td class="text-neon-cyan fw-bold">฿<?= number_format($row['price']) ?></td>
+                        <td>
+                            <span class="badge rounded-pill bg-dark border border-secondary px-3">
+                                <?= $row['stock'] ?> ชิ้น
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a href="edit_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning border-0">
+                                <i class="bi bi-pencil-square fs-5"></i>
+                            </a>
+                            <a href="admin_dashboard.php?del_id=<?= $row['id'] ?>&type=product&tab=products" 
+                               class="btn btn-sm btn-outline-danger border-0" 
+                               onclick="return confirm('ยืนยันการลบสินค้า?')">
+                                <i class="bi bi-trash fs-5"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr><td colspan="5" class="text-center py-5 opacity-50">ยังไม่มีข้อมูลสินค้า</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
