@@ -160,7 +160,7 @@ body {
         <div class="row mb-5">
             <?php while($p = $recommended->fetch_assoc()){ ?>
             <div class="col-md-3 mb-4">
-                <div class="card product-card p-3 text-center h-100" onclick="location.href='product_detail.php?id=<?= $p['id'] ?>'">
+                <div class="card product-card p-3 text-center h-100" onclick="location.href='product.php?id=<?= $p['id'] ?>'">
                     <img src="images/<?= $p['image']; ?>" class="img-fluid mb-2 rounded-4" style="height:200px; object-fit:cover;" onerror="this.src='https://via.placeholder.com/200'">
                     <h6 class="text-truncate px-2 text-white"><?= $p['name']; ?></h6>
                     <p class="text-info fw-bold mb-3"><?= number_format($p['price']); ?> บาท</p>
