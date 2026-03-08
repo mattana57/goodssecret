@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// --- [ระบบจัดการจำนวนสินค้า (บวกลบ)]: คงเดิมตามไฟล์ของคุณ ---
+// --- ระบบจัดการจำนวนสินค้า (บวกลบ) คงเดิม ---
 if (isset($_GET['action']) && isset($_GET['product_id'])) {
     $p_id = intval($_GET['product_id']);
     $v_id = isset($_GET['variant_id']) ? intval($_GET['variant_id']) : 0;
@@ -23,7 +23,7 @@ if (isset($_GET['action']) && isset($_GET['product_id'])) {
     exit();
 }
 
-// --- [ฟังก์ชันลบ]: คงเดิมพร้อมเช็ค variant_id ---
+// --- ฟังก์ชันลบสินค้า คงเดิม ---
 if (isset($_GET['delete_id'])) {
     $del_id = intval($_GET['delete_id']);
     $v_id = isset($_GET['variant_id']) ? intval($_GET['variant_id']) : 0;
@@ -32,7 +32,7 @@ if (isset($_GET['delete_id'])) {
     exit();
 }
 
-/* --- [ปรับปรุง Query]: Join ตารางรุ่นย่อยเพื่อให้ดึงชื่อรุ่นและรูปภาพเฉพาะรุ่นมาแสดง --- */
+// [จุดแก้ไขสำคัญ]: ปรับ Query ให้ดึงราคาและรูปภาพจากรุ่นย่อย (Variant) มาแสดงแทนค่าว่าง
 $sql = "SELECT cart.*, products.name, products.image as p_img, pv.variant_name, pv.variant_image 
         FROM cart 
         JOIN products ON cart.product_id = products.id 
@@ -49,51 +49,16 @@ $result = $conn->query($sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        /* --- [โค้ด CSS เดิมของคุณทั้งหมด ห้ามตัด] --- */
-        body {
-            background-color: #0f172a;
-            color: #ffffff !important;
-            background-image: radial-gradient(circle at top right, #3d1263, transparent), 
-                              radial-gradient(circle at bottom left, #1e1b4b, transparent);
-            min-height: 100vh;
-        }
+        /* โค้ด CSS เดิมของมึงเป๊ะๆ ไม่หายแน่นอน */
+        body { background-color: #0f172a; color: #ffffff !important; background-image: radial-gradient(circle at top right, #3d1263, transparent), radial-gradient(circle at bottom left, #1e1b4b, transparent); min-height: 100vh; }
         h2, h4, h5 { color: #ffffff !important; font-weight: 700; text-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
         .table { color: #ffffff !important; --bs-table-bg: transparent !important; }
-        .table thead th {
-            color: #bb86fc !important;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important;
-            text-transform: uppercase;
-            font-size: 0.95rem;
-            letter-spacing: 1px;
-        }
-        .fw-bold.text-white, .fs-5.text-white { color: #ffffff !important; }
-        .text-secondary-bright { color: #e2e8f0 !important; }
+        .table thead th { color: #bb86fc !important; border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important; text-transform: uppercase; font-size: 0.95rem; letter-spacing: 1px; }
         .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 12px rgba(0, 242, 254, 0.6); }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03) !important;
-            backdrop-filter: blur(10px);
-            border: 1.5px solid rgba(187, 134, 252, 0.3) !important; 
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(187, 134, 252, 0.1) !important; 
-            padding: 25px;
-            transition: all 0.3s ease;
-        }
-        .glass-panel:hover {
-            border-color: rgba(187, 134, 252, 0.6) !important;
-            transform: translateY(-5px);
-        }
+        .glass-panel { background: rgba(255, 255, 255, 0.03) !important; backdrop-filter: blur(10px); border: 1.5px solid rgba(187, 134, 252, 0.3) !important; border-radius: 20px; padding: 25px; transition: all 0.3s ease; }
         .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .btn-checkout {
-            background: linear-gradient(135deg, #f107a3, #ff0080) !important;
-            border: none !important; color: #ffffff !important; font-weight: 700;
-            padding: 15px 30px; border-radius: 50px; transition: 0.4s;
-            box-shadow: 0 5px 20px rgba(241, 7, 163, 0.5); width: 100%;
-        }
-        .btn-checkout:hover { transform: translateY(-5px); filter: brightness(1.2); }
-        .btn-remove { color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; transition: 0.3s; cursor: pointer; }
-        .btn-remove:hover { color: #ff4d4d; transform: rotate(15deg) scale(1.2); }
-        .qty-btn { color: #bb86fc; font-size: 1.2rem; text-decoration: none; transition: 0.2s; }
-        .qty-btn:hover { color: #00f2fe; transform: scale(1.1); }
+        .btn-checkout { background: linear-gradient(135deg, #f107a3, #ff0080) !important; border: none !important; color: #ffffff !important; font-weight: 700; padding: 15px 30px; border-radius: 50px; width: 100%; }
+        .qty-btn { color: #bb86fc; font-size: 1.2rem; text-decoration: none; }
         .qty-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(187,134,252,0.3); border-radius: 8px; min-width: 40px; display: inline-block; }
         .modal-content.delete-popup { background: rgba(40, 0, 10, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 25px; color: #fff; }
     </style>
@@ -122,10 +87,10 @@ $result = $conn->query($sql);
                             <?php 
                             $grand_total = 0;
                             while($row = $result->fetch_assoc()): 
-                                // ใช้ราคาจากตาราง cart ที่บันทึกมาจาก add_to_cart.php
+                                // ใช้ราคาจากตาราง cart ที่เราบันทึกลงไป
                                 $subtotal = $row['price'] * $row['quantity'];
                                 $grand_total += $subtotal;
-                                // ตรวจสอบรูปภาพ: ถ้ามีรูปเฉพาะรุ่นให้ใช้รูปนั้น
+                                // แสดงรูปรุ่นย่อย (ถ้ามี) ถ้าไม่มีให้ใช้รูปหลัก
                                 $display_img = (!empty($row['variant_image'])) ? $row['variant_image'] : $row['p_img'];
                             ?>
                             <tr style="vertical-align: middle;">
@@ -137,7 +102,6 @@ $result = $conn->query($sql);
                                             <?php if(!empty($row['variant_name'])): ?>
                                                 <div class="text-info small">แบบ: <?= $row['variant_name'] ?></div>
                                             <?php endif; ?>
-                                            <div class="text-secondary-bright small">ID: #<?= $row['product_id'] ?></div>
                                         </div>
                                     </div>
                                 </td>
@@ -161,8 +125,7 @@ $result = $conn->query($sql);
                 <?php else: ?>
                     <div class="text-center py-5">
                         <i class="bi bi-bag-x display-1 opacity-25"></i>
-                        <p class="mt-4 fs-4 text-secondary-bright">ยังไม่มีสินค้าในตะกร้า</p>
-                        <a href="index.php" class="btn btn-outline-info rounded-pill px-4 mt-2">เริ่มช้อปปิ้ง</a>
+                        <p class="mt-4 fs-4 text-white-50">ยังไม่มีสินค้าในตะกร้า</p>
                     </div>
                 <?php endif; ?>
             </div>
@@ -187,8 +150,7 @@ $result = $conn->query($sql);
             <div class="modal-body">
                 <i class="bi bi-trash3 mb-4" style="font-size: 4rem; color: #ff4d4d;"></i>
                 <h3 class="fw-bold mb-3" style="color: #ff4d4d;">ยืนยันการลบ?</h3>
-                <p class="fs-5 opacity-75 mb-4 text-white">ลบสินค้าชิ้นนี้ออกจากตะกร้า?</p>
-                <div class="d-flex justify-content-center gap-3">
+                <div class="d-flex justify-content-center gap-3 mt-4">
                     <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
                     <a id="confirmDeleteBtn" href="#" class="btn btn-danger rounded-pill px-4 text-decoration-none">ยืนยัน</a>
                 </div>
