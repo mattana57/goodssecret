@@ -6,7 +6,6 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     $desc = $conn->real_escape_string($_POST['description'] ?? '');
     $is_variant = $_POST['is_variant'];
     
-    // จัดการรูปภาพหลัก
     $img_name = $_POST['existing_image'] ?? "default.png";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = time() . "_" . basename($_FILES['image']['name']);
@@ -24,14 +23,14 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
         $p_id = $conn->insert_id;
     }
 
-    // จัดการรุ่นย่อย (Variants)
     if($is_variant == 'yes' && isset($_POST['v_names'])) {
         foreach($_POST['v_names'] as $i => $vname) {
             $v_id = $_POST['v_ids'][$i] ?? 'new';
-            $vprice = $_POST['v_prices'][$i]; $vstock = $_POST['v_stocks'][$i];
+            $vprice = $_POST['v_prices'][$i]; 
+            $vstock = $_POST['v_stocks'][$i];
             $vdesc = $conn->real_escape_string($_POST['v_descriptions'][$i] ?? '');
-            
             $vimg = $_POST['existing_v_images'][$i] ?? "";
+            
             if (isset($_FILES['v_images']['name'][$i]) && $_FILES['v_images']['error'][$i] == 0) {
                 $vimg = "v_" . time() . "_" . $i . "_" . basename($_FILES['v_images']['name'][$i]);
                 move_uploaded_file($_FILES['v_images']['tmp_name'][$i], "images/" . $vimg);
@@ -47,7 +46,7 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     echo "<script>window.location='admin_dashboard.php?tab=products&success=1';</script>";
 }
 
-// --- [Logic 2]: AJAX ดึงข้อมูลสินค้ามาแก้ไข ---
+// --- [Logic 2]: AJAX ดึงข้อมูลสินค้ามาใส่ใน Modal แก้ไข ---
 if (isset($_GET['get_product_json'])) {
     $id = intval($_GET['get_product_json']);
     $p = $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc();
@@ -60,10 +59,12 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 ?>
 
 <style>
+    /* ปรับแต่งความสว่างตัวหนังสือและธีมนีออน */
     .text-white-bright { color: #ffffff !important; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
-    .btn-edit-neon { border: 1px solid #ffc107 !important; color: #ffc107 !important; background: transparent; }
+    .btn-edit-neon { border: 1px solid #ffc107 !important; color: #ffc107 !important; background: transparent !important; }
     .btn-edit-neon:hover { background: #ffc107 !important; color: #000 !important; box-shadow: 0 0 15px #ffc107; }
+    .form-control, .form-select { background: rgba(255,255,255,0.1) !important; color: #ffffff !important; border: 1px solid rgba(187, 134, 252, 0.4) !important; }
 </style>
 
 <div class="glass-panel mt-2">
@@ -82,7 +83,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
             <tbody>
                 <?php while($p = $products->fetch_assoc()): ?>
                 <tr class="align-middle">
-                    <td><img src="images/<?= $p['image'] ?>" width="60" height="60" class="rounded-3 border border-info"></td>
+                    <td><img src="images/<?= $p['image'] ?>" width="60" height="60" class="rounded-3 border border-info" style="object-fit:cover;"></td>
                     <td class="text-white-bright fw-bold"><?= htmlspecialchars($p['name']) ?></td>
                     <td class="text-neon-cyan fw-bold">฿<?= number_format($p['price']) ?></td>
                     <td class="text-white"><?= $p['stock'] ?></td>
@@ -129,7 +130,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                         <div class="col-md-6"><label class="small fw-bold mb-2">ราคา</label><input type="number" name="price" id="form_price" class="form-control"></div>
                         <div class="col-md-6"><label class="small fw-bold mb-2">สต็อก</label><input type="number" name="stock" id="form_stock" class="form-control"></div>
                     </div>
-                    <div class="col-12 mt-3"><label class="small fw-bold mb-2">รูปภาพ</label><input type="file" name="image" class="form-control"></div>
+                    <div class="col-12 mt-3"><label class="small fw-bold mb-2">รูปภาพสินค้า</label><input type="file" name="image" class="form-control"></div>
                     <div id="variant_section_box" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="text-neon-cyan fw-bold mb-0">รายการรุ่นย่อย</h6>
@@ -147,13 +148,13 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 </div>
 
 <script>
-// --- [JavaScript]: ต้องมีฟังก์ชันเหล่านี้ ปุ่มถึงจะทำงาน ---
-
+// ฟังก์ชันสลับการแสดงผลรุ่นย่อย
 function toggleVariantDisplay(val) {
     if (val === 'yes') { $('#variant_section_box').slideDown(); $('#no_variant_row').slideUp(); } 
     else { $('#variant_section_box').slideUp(); $('#no_variant_row').slideDown(); }
 }
 
+// ฟังก์ชันเปิด Modal สำหรับเพิ่มสินค้าใหม่
 function openAddModal() {
     $('#modal_title').text('เพิ่มสินค้าใหม่');
     $('#btn_submit_product').attr('name', 'save_product').text('บันทึกข้อมูลเข้าคลัง');
@@ -164,11 +165,11 @@ function openAddModal() {
     new bootstrap.Modal(document.getElementById('pModalFull')).show();
 }
 
+// [หัวใจสำคัญ]: ฟังก์ชันเปิด Modal สำหรับแก้ไขข้อมูล
 function openEditModal(pid) {
-    // จุดสำคัญ: ดึงข้อมูลผ่าน AJAX
     $('#variant_list_container').empty();
     $.getJSON('admin_products.php', { get_product_json: pid }, function(data) {
-        $('#modal_title').text('แก้ไขสินค้า');
+        $('#modal_title').text('แก้ไขข้อมูลสินค้า');
         $('#btn_submit_product').attr('name', 'update_product').text('อัปเดตข้อมูลสินค้า');
         $('#form_p_id').val(data.product.id);
         $('#form_name').val(data.product.name);
@@ -198,11 +199,11 @@ function addVariantRowAction(data = null) {
     const vimg_old = data ? data.variant_image : '';
 
     const html = `
-        <div class="variant-item-row bg-black bg-opacity-25 p-3 rounded-3 mb-3 border border-secondary shadow-sm">
+        <div class="variant-item-row bg-black bg-opacity-25 p-3 rounded-3 mb-3 border border-secondary">
             <input type="hidden" name="v_ids[]" value="${vid}">
             <input type="hidden" name="existing_v_images[]" value="${vimg_old}">
             <div class="row g-2">
-                <div class="col-md-4"><label class="small">ชื่อลาย/รุ่น</label><input type="text" name="v_names[]" class="form-control" value="${vname}" required></div>
+                <div class="col-md-4"><label class="small">ลาย/รุ่น</label><input type="text" name="v_names[]" class="form-control" value="${vname}" required></div>
                 <div class="col-md-2"><label class="small">ราคา</label><input type="number" name="v_prices[]" class="form-control" value="${vprice}" required></div>
                 <div class="col-md-2"><label class="small">สต็อก</label><input type="number" name="v_stocks[]" class="form-control" value="${vstock}" required></div>
                 <div class="col-md-4"><label class="small">รูป</label><input type="file" name="v_images[]" class="form-control"></div>
