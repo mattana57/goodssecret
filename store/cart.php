@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// --- [ส่วนที่แทรกเพิ่ม 1]: ระบบจัดการจำนวนสินค้า (บวกลบ) ---
+// --- [ระบบจัดการจำนวนสินค้า (บวกลบ)]: คงเดิมตามไฟล์ล่าสุดของคุณ ---
 if (isset($_GET['action']) && isset($_GET['product_id'])) {
     $p_id = intval($_GET['product_id']);
     $v_id = isset($_GET['variant_id']) ? intval($_GET['variant_id']) : 0;
@@ -23,7 +23,7 @@ if (isset($_GET['action']) && isset($_GET['product_id'])) {
     exit();
 }
 
-// --- [ส่วนที่แทรกเพิ่ม 2]: แก้ไขฟังก์ชันลบเดิมให้เช็ค variant_id ด้วย เพื่อไม่ให้ลบผิดแบบ ---
+// --- [ฟังก์ชันลบ]: คงเดิมพร้อมเช็ค variant_id ---
 if (isset($_GET['delete_id'])) {
     $del_id = intval($_GET['delete_id']);
     $v_id = isset($_GET['variant_id']) ? intval($_GET['variant_id']) : 0;
@@ -32,8 +32,8 @@ if (isset($_GET['delete_id'])) {
     exit();
 }
 
-// --- [ส่วนที่แทรกเพิ่ม 3]: แก้ไข Query ให้ดึงชื่อแบบสินค้า (variant_name) มาแสดงด้วย ---
-$sql = "SELECT cart.*, products.name, products.price, products.image, pv.variant_name 
+/* --- [จุดแก้ไข]: ปรับ Query ให้ Join ข้อมูลจากตารางรุ่นย่อย เพื่อเอาชื่อ ราคา และรูปภาพเฉพาะรุ่นมาแสดง --- */
+$sql = "SELECT cart.*, products.name, products.image as p_img, pv.variant_name, pv.variant_image 
         FROM cart 
         JOIN products ON cart.product_id = products.id 
         LEFT JOIN product_variants pv ON cart.variant_id = pv.id
@@ -49,7 +49,7 @@ $result = $conn->query($sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        /* --- [โค้ด CSS เดิมของคุณทั้งหมด ห้ามแตะ] --- */
+        /* --- [โค้ด CSS เดิมของคุณทั้งหมด 100% ไม่ตัดทอน] --- */
         body {
             background-color: #0f172a;
             color: #ffffff !important;
@@ -101,16 +101,12 @@ $result = $conn->query($sql);
         .btn-remove { color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; transition: 0.3s; cursor: pointer; }
         .btn-remove:hover { color: #ff4d4d; transform: rotate(15deg) scale(1.2); }
         .modal-content.delete-popup { background: rgba(40, 0, 10, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 25px; color: #fff; }
-
-        /* --- [ส่วนที่แทรกเพิ่ม]: สไตล์สำหรับปุ่มบวกลบ --- */
         .qty-btn { color: #bb86fc; font-size: 1.2rem; text-decoration: none; transition: 0.2s; }
         .qty-btn:hover { color: #00f2fe; transform: scale(1.1); }
         .qty-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(187,134,252,0.3); border-radius: 8px; min-width: 40px; display: inline-block; }
     </style>
 </head>
 <body>
-
-<?php include "navbar.php"; ?>
 
 <div class="container py-5">
     <h2 class="mb-5 text-white"><i class="bi bi-cart3 text-neon-cyan me-3"></i>ตะกร้าสินค้าของคุณ</h2>
@@ -134,13 +130,16 @@ $result = $conn->query($sql);
                             <?php 
                             $grand_total = 0;
                             while($row = $result->fetch_assoc()): 
+                                /* --- [ปรับแต่ง]: ใช้ค่า price จากตาราง cart ที่บันทึกมาถูกต้องแล้ว --- */
                                 $subtotal = $row['price'] * $row['quantity'];
                                 $grand_total += $subtotal;
+                                /* --- [ปรับแต่ง]: แสดงรูปภาพตามรุ่นที่เลือก (ถ้ามี) --- */
+                                $display_img = (!empty($row['variant_image'])) ? $row['variant_image'] : $row['p_img'];
                             ?>
                             <tr style="vertical-align: middle;">
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <img src="images/<?= $row['image'] ?>" class="product-img me-3">
+                                        <img src="images/<?= $display_img ?>" class="product-img me-3">
                                         <div>
                                             <div class="fw-bold text-white fs-5"><?= $row['name'] ?></div>
                                             <?php if(!empty($row['variant_name'])): ?>
@@ -151,24 +150,16 @@ $result = $conn->query($sql);
                                     </div>
                                 </td>
                                 <td class="text-end text-white">฿<?= number_format($row['price']) ?></td>
-                                
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center align-items-center gap-2">
-                                        <a href="cart.php?action=decrease&product_id=<?= $row['product_id'] ?>&variant_id=<?= $row['variant_id'] ?>" class="qty-btn">
-                                            <i class="bi bi-dash-circle"></i>
-                                        </a>
+                                        <a href="cart.php?action=decrease&product_id=<?= $row['product_id'] ?>&variant_id=<?= $row['variant_id'] ?>" class="qty-btn"><i class="bi bi-dash-circle"></i></a>
                                         <span class="qty-box py-1 text-white"><?= $row['quantity'] ?></span>
-                                        <a href="cart.php?action=increase&product_id=<?= $row['product_id'] ?>&variant_id=<?= $row['variant_id'] ?>" class="qty-btn">
-                                            <i class="bi bi-plus-circle"></i>
-                                        </a>
+                                        <a href="cart.php?action=increase&product_id=<?= $row['product_id'] ?>&variant_id=<?= $row['variant_id'] ?>" class="qty-btn"><i class="bi bi-plus-circle"></i></a>
                                     </div>
                                 </td>
-                                
                                 <td class="text-end fw-bold text-neon-cyan">฿<?= number_format($subtotal) ?></td>
                                 <td class="text-end">
-                                    <a href="javascript:void(0)" class="btn-remove" onclick="showDeleteModal(<?= $row['product_id'] ?>, <?= $row['variant_id'] ?>)">
-                                        <i class="bi bi-trash3-fill"></i>
-                                    </a>
+                                    <a href="javascript:void(0)" class="btn-remove" onclick="showDeleteModal(<?= $row['product_id'] ?>, <?= $row['variant_id'] ?>)"><i class="bi bi-trash3-fill"></i></a>
                                 </td>
                             </tr>
                             <?php endwhile; ?>
@@ -188,30 +179,11 @@ $result = $conn->query($sql);
         <div class="col-lg-4">
             <div class="glass-panel p-3">
                 <h4 class="mb-4 text-white">สรุปการสั่งซื้อ</h4>
-                <div class="d-flex justify-content-between mb-3 fs-5">
-                    <span class="text-secondary-bright">ยอดรวม</span>
-                    <span class="text-white">฿<?= number_format($grand_total ?? 0) ?></span>
-                </div>
-                <div class="d-flex justify-content-between mb-3 fs-5">
-                    <span class="text-secondary-bright">ค่าส่ง</span>
-                    <span class="text-success fw-bold">ฟรี</span>
-                </div>
+                <div class="d-flex justify-content-between mb-3 fs-5"><span class="text-secondary-bright">ยอดรวม</span><span class="text-white">฿<?= number_format($grand_total ?? 0) ?></span></div>
+                <div class="d-flex justify-content-between mb-3 fs-5"><span class="text-secondary-bright">ค่าส่ง</span><span class="text-success fw-bold">ฟรี</span></div>
                 <hr class="my-4 border-secondary opacity-50">
-                <div class="d-flex justify-content-between mb-5">
-                    <span class="h4 text-white">รวมสุทธิ</span>
-                    <span class="h3 fw-bold text-neon-cyan">฿<?= number_format($grand_total ?? 0) ?></span>
-                </div>
-                
-                <?php if ($grand_total > 0): ?>
-                    <a href="checkout.php" class="btn btn-checkout mb-4 text-decoration-none d-flex align-items-center justify-content-center">
-                        ชำระเงิน <i class="bi bi-arrow-right-circle ms-2"></i>
-                    </a>
-                <?php else: ?>
-                    <button class="btn btn-checkout mb-4" disabled style="opacity: 0.5; cursor: not_allowed;">
-                        ชำระเงิน (ไม่มีสินค้า) <i class="bi bi-arrow-right-circle ms-2"></i>
-                    </button>
-                <?php endif; ?>
-                <a href="index.php" class="btn btn-link w-100 text-secondary-bright text-decoration-none text-center d-block">เลือกซื้อสินค้าต่อ</a>
+                <div class="d-flex justify-content-between mb-5"><span class="h4 text-white">รวมสุทธิ</span><span class="h3 fw-bold text-neon-cyan">฿<?= number_format($grand_total ?? 0) ?></span></div>
+                <a href="checkout.php" class="btn btn-checkout text-decoration-none d-flex align-items-center justify-content-center">ชำระเงิน <i class="bi bi-arrow-right-circle ms-2"></i></a>
             </div>
         </div>
     </div>
@@ -219,13 +191,13 @@ $result = $conn->query($sql);
 
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content delete-popup">
-            <div class="modal-body text-center py-5">
+        <div class="modal-content delete-popup text-center py-5">
+            <div class="modal-body">
                 <div class="mb-4"><i class="bi bi-trash3 neon-delete-icon" style="font-size: 4rem; color: #ff4d4d;"></i></div>
                 <h3 class="fw-bold mb-3" style="color: #ff4d4d;">ยืนยันการลบ?</h3>
                 <p class="fs-5 opacity-75 mb-4 text-white">ลบสินค้าชิ้นนี้ออกจากตะกร้า?</p>
                 <div class="d-flex justify-content-center gap-3">
-                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss=\"modal\">ยกเลิก</button>
+                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
                     <a id="confirmDeleteBtn" href="#" class="btn btn-danger rounded-pill px-4 text-decoration-none">ยืนยัน</a>
                 </div>
             </div>
@@ -235,7 +207,6 @@ $result = $conn->query($sql);
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // [แทรกเพิ่ม]: ฟังก์ชันลบให้รองรับ variantId
     function showDeleteModal(productId, variantId) {
         const deleteUrl = 'cart.php?delete_id=' + productId + '&variant_id=' + variantId;
         document.getElementById('confirmDeleteBtn').setAttribute('href', deleteUrl);

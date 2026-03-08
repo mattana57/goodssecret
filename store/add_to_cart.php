@@ -3,7 +3,7 @@ session_start();
 include 'connectdb.php'; 
 
 if(!isset($_SESSION['user_id'])){
-    if(isset($_GET['ajax'])){ echo json_encode(['status' => 'error']); exit(); }
+    if(isset($_GET['ajax'])){ echo json_encode(['status' => 'error', 'message' => 'login_required']); exit(); }
     header("Location: login.php"); exit();
 }
 
@@ -14,14 +14,14 @@ $variant_id = isset($_GET['variant_id']) && $_GET['variant_id'] != "" ? intval($
 $action = $_GET['action'] ?? '';
 
 if($product_id > 0 && $qty > 0){
-    // [ปรับเพิ่ม]: ดึงราคาที่ถูกต้องตามประเภทสินค้า
+    /* --- [ส่วนที่ปรับปรุง]: ดึงราคาให้ถูกต้องตามรุ่นที่เลือก --- */
     if ($variant_id > 0) {
-        // กรณีมีรุ่นย่อย ดึงราคาจากตาราง product_variants
+        // ดึงราคาจากตารางรุ่นย่อย
         $res = $conn->query("SELECT price FROM product_variants WHERE id = $variant_id");
         $v_data = $res->fetch_assoc();
         $price = $v_data['price'];
     } else {
-        // กรณีสินค้าปกติ ดึงราคาจากตาราง products
+        // ดึงราคาจากตารางสินค้าหลัก
         $res = $conn->query("SELECT price FROM products WHERE id = $product_id");
         $p_data = $res->fetch_assoc();
         $price = $p_data['price'];
@@ -32,7 +32,7 @@ if($product_id > 0 && $qty > 0){
     if($check->num_rows > 0){
         $conn->query("UPDATE cart SET quantity = quantity + $qty WHERE user_id = $user_id AND product_id = $product_id AND variant_id = $variant_id");
     } else {
-        // [ปรับเพิ่ม]: บันทึกราคา (price) ลงในตาราง cart ด้วย
+        /* --- [ส่วนที่ปรับปรุง]: บันทึกราคา (price) ลงในตาราง cart เพื่อให้หน้า cart.php ดึงไปใช้ง่ายๆ --- */
         $conn->query("INSERT INTO cart (user_id, product_id, quantity, variant_id, price) VALUES ($user_id, $product_id, $qty, $variant_id, $price)");
     }
 }
