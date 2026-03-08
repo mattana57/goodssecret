@@ -1,7 +1,7 @@
 <?php
 $host = "localhost";
 $user = "root";
-$pass = "6!gSoLZDZxO!";
+$pass = "groupCar_toon05";
 $db   = "goods_secret_store";
 
 $conn = new mysqli($host,$user,$pass,$db);
