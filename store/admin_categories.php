@@ -17,6 +17,8 @@ if (isset($_POST['update_cat'])) {
 $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 ?>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
     /* บังคับใช้ธีม Dark Neon ให้ปุ่มแก้ไขและลบ */
     .btn-edit-neon {
@@ -51,6 +53,17 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
     }
 
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
+
+    /* ปรับแต่ง SweetAlert ให้เข้าธีมร้าน */
+    .swal2-popup {
+        background: #1a0028 !important;
+        border: 1px solid #bb86fc !important;
+        border-radius: 25px !important;
+        color: #fff !important;
+    }
+    .swal2-title { color: #00f2fe !important; }
+    .swal2-confirm { background: #ff4d4d !important; border-radius: 50px !important; padding: 10px 30px !important; }
+    .swal2-cancel { background: transparent !important; border: 1px solid #fff !important; border-radius: 50px !important; padding: 10px 30px !important; }
 </style>
 
 <div class="glass-panel-custom mt-2">
@@ -85,7 +98,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
                             </button>
                             
                             <button class="btn btn-sm btn-delete-neon rounded-pill px-3 py-1" 
-                                    onclick="if(confirm('ยืนยันลบ [<?= htmlspecialchars($c['name']) ?>]?')) window.location='admin_dashboard.php?tab=categories&del_id=<?= $c['id'] ?>&type=category'">
+                                    onclick="confirmDelete(<?= $c['id'] ?>, '<?= htmlspecialchars($c['name']) ?>')">
                                 <i class="bi bi-trash"></i> ลบ
                             </button>
                         </div>
@@ -120,7 +133,23 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 </div>
 
 <script>
-// ฟังก์ชันสำหรับเปิด Modal และดึงค่าเดิมมาใส่
+// ฟังก์ชันลบแบบป๊อปอัพสวยๆ
+function confirmDelete(id, name) {
+    Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: "คุณต้องการลบประเภทสินค้า [" + name + "] ใช่หรือไม่?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location = 'admin_dashboard.php?tab=categories&del_id=' + id + '&type=category';
+        }
+    })
+}
+
 function editCategory(id, name) {
     document.getElementById('edit_cat_id').value = id;
     document.getElementById('edit_cat_name').value = name;
