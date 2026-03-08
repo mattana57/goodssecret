@@ -14,8 +14,8 @@ $user_id = $_SESSION['user_id'];
 $user_info_q = $conn->query("SELECT * FROM users WHERE id = $user_id");
 $user_info = $user_info_q->fetch_assoc();
 
-// [แก้ไข]: ดึงข้อมูลสินค้าในตะกร้าเพื่อคำนวณยอดรวมสุทธิ พร้อมดึงชื่อรุ่นสินค้า (variant_name) มาด้วย
-$sql = "SELECT cart.*, products.name, products.price, pv.variant_name 
+// [จุดแก้ไขสำคัญ]: ปรับ Query ให้ดึงราคา (price) จากตาราง cart ซึ่งเก็บราคาที่ถูกต้องของรุ่นย่อยไว้แล้ว
+$sql = "SELECT cart.*, products.name, pv.variant_name 
         FROM cart 
         JOIN products ON cart.product_id = products.id 
         LEFT JOIN product_variants pv ON cart.variant_id = pv.id 
@@ -30,6 +30,7 @@ if ($result->num_rows == 0) {
 $grand_total = 0;
 $items = [];
 while($row = $result->fetch_assoc()) {
+    // ใช้ราคาจากแถวในตะกร้าโดยตรงเพื่อให้ตรงกับรุ่นที่เลือก
     $grand_total += ($row['price'] * $row['quantity']);
     $items[] = $row;
 }
@@ -44,7 +45,7 @@ while($row = $result->fetch_assoc()) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        /* --- [ปรับสี]: ธีมม่วง-ดำ ลึกลับ (Dark Purple Neon) --- */
+        /* --- [คงเดิม]: ธีมม่วง-ดำ ลึกลับ (Dark Purple Neon) --- */
         body { 
             background-color: #0c001c; 
             color: #fff; 
@@ -82,7 +83,6 @@ while($row = $result->fetch_assoc()) {
             box-shadow: 0 0 15px rgba(241, 7, 163, 0.3); 
         }
 
-        /* ปุ่มยืนยันสีชมพู-ม่วง */
         .btn-confirm { 
             background: linear-gradient(135deg, #f107a3, #bb86fc); 
             border: none; color: #fff; font-weight: bold; 
@@ -92,7 +92,6 @@ while($row = $result->fetch_assoc()) {
         }
         .btn-confirm:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(241, 7, 163, 0.6); }
 
-        /* ปุ่มยกเลิก/ย้อนกลับ */
         .btn-cancel {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -113,7 +112,6 @@ while($row = $result->fetch_assoc()) {
             background: rgba(241, 7, 163, 0.1); 
         }
 
-        /* สไตล์ Modal แจ้งเตือน */
         .modal-content.custom-popup { 
             background: rgba(26, 0, 40, 0.95); backdrop-filter: blur(20px); 
             border: 1px solid #f107a3; border-radius: 25px; color: #fff; 
@@ -251,7 +249,6 @@ while($row = $result->fetch_assoc()) {
     codRadio.addEventListener('change', () => { if(codRadio.checked) slipSection.style.display = 'none'; });
     bankRadio.addEventListener('change', () => { if(bankRadio.checked) slipSection.style.display = 'block'; });
 
-    // ฟังก์ชันตรวจสอบก่อนส่งฟอร์ม
     checkoutForm.addEventListener('submit', function(e) {
         if (bankRadio.checked && slipInput.files.length === 0) {
             e.preventDefault(); 
