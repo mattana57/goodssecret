@@ -7,21 +7,21 @@ if (!isset($_SESSION['user_id']) || !isset($_GET['id'])) { header("Location: pro
 $order_id = intval($_GET['id']);
 $user_id = $_SESSION['user_id'];
 
-// --- [Logic 1]: กดยืนยันการรับสินค้า (เฉพาะสถานะ shipped) ---
+// --- [Logic 1]: กดยืนยันการรับสินค้า ---
 if (isset($_POST['confirm_received'])) {
     $conn->query("UPDATE orders SET status = 'delivered' WHERE id = $order_id AND user_id = $user_id AND status = 'shipped'");
     header("Location: order_detail.php?id=$order_id&success=received"); exit();
 }
 
-// --- [Logic 2]: ลูกค้ายกเลิกออเดอร์เอง (เฉพาะสถานะ pending/processing) ---
+// --- [Logic 2]: ลูกค้ายกเลิกออเดอร์เอง ---
 if (isset($_POST['customer_cancel'])) {
     $reason = $conn->real_escape_string($_POST['cancel_reason'] ?? 'ลูกค้ายกเลิกเองผ่านหน้าเว็บ');
-    $sql_cancel = "UPDATE orders SET status = 'cancelled', cancel_reason = '$reason' 
+    $sql_cancel = "UPDATE orders SET status = 'cancelled', cancel_by = 'customer', cancel_reason = '$reason' 
                    WHERE id = $order_id AND user_id = $user_id AND status IN ('pending', 'processing')";
     if($conn->query($sql_cancel)) { header("Location: order_detail.php?id=$order_id&cancelled=1"); exit(); }
 }
 
-// --- [Logic 3]: อัปเดตข้อมูลผู้รับ (แก้ไขได้จนกว่าจะส่งสินค้า) ---
+// --- [Logic 3]: อัปเดตข้อมูลผู้รับ ---
 if (isset($_POST['update_shipping'])) {
     $sql_upd = "UPDATE orders SET 
                 fullname = '".$conn->real_escape_string($_POST['fullname'])."', 
@@ -59,14 +59,15 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
     <title>บิล #<?= $order_id ?> | Goods Secret Store</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
     <style>
         body { background: #0c001c; color: #fff; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
         .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(187, 134, 252, 0.2); border-radius: 30px; padding: 40px; }
         .text-neon-cyan { color: #00f2fe; text-shadow: 0 0 10px #00f2fe; }
         .text-neon-pink { color: #f107a3; text-shadow: 0 0 10px #f107a3; }
         .form-control { background: rgba(0, 0, 0, 0.3) !important; border: 1px solid rgba(187, 134, 252, 0.3) !important; color: #fff !important; border-radius: 12px; }
-        .custom-alert-neon { background: rgba(0, 255, 136, 0.05); border: 1px solid #00ff88; color: #00ff88; border-radius: 20px; box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
         .custom-alert-danger { background: rgba(255, 77, 77, 0.05); border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 20px; box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
+        .swal2-popup { border: 2px solid #f107a3 !important; border-radius: 25px !important; background: #1a0028 !important; }
     </style>
 </head>
 <body>
@@ -80,7 +81,7 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
 
         <?php if($order['status'] == 'cancelled'): ?>
             <div class="alert custom-alert-danger text-center mb-4 shadow">
-                <h5 class="fw-bold mb-1"><i class="bi bi-x-circle-fill me-2"></i> คำสั่งซื้อถูกยกเลิก</h5>
+                <h5 class="fw-bold mb-1"><i class="bi bi-x-circle-fill me-2"></i> คำสั่งซื้อถูกยกเลิกโดย <?= ($order['cancel_by'] == 'admin') ? 'แอดมิน' : 'คุณ' ?></h5>
                 <p class="small mb-0 opacity-75">เหตุผล: <?= htmlspecialchars($order['cancel_reason'] ?: 'กรุณาติดต่อเจ้าหน้าที่') ?></p>
             </div>
         <?php endif; ?>
@@ -88,7 +89,7 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
         <div class="row g-4 mb-5">
             <div class="col-md-6 border-end border-white border-opacity-10 pe-md-4">
                 <form method="POST">
-                    <h6 class="text-neon-pink mb-3 small fw-bold">ข้อมูลการจัดส่ง (แก้ไขได้จนกว่าจะส่งของ)</h6>
+                    <h6 class="text-neon-pink mb-3 small fw-bold">ข้อมูลการจัดส่ง</h6>
                     <div class="row g-2">
                         <div class="col-12"><label class="small opacity-50 mb-1">ชื่อผู้รับ</label><input type="text" name="fullname" class="form-control" value="<?= htmlspecialchars($order['fullname']) ?>" <?= !in_array($order['status'], ['pending', 'processing']) ? 'disabled' : '' ?>></div>
                         <div class="col-md-7"><label class="small opacity-50 mb-1">เบอร์โทร</label><input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($order['phone']) ?>" <?= !in_array($order['status'], ['pending', 'processing']) ? 'disabled' : '' ?>></div>
@@ -96,21 +97,21 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
                         <div class="col-12"><label class="small opacity-50 mb-1">ที่อยู่</label><textarea name="address" class="form-control" rows="2" <?= !in_array($order['status'], ['pending', 'processing']) ? 'disabled' : '' ?>><?= htmlspecialchars($order['address']) ?></textarea></div>
                         <div class="col-12"><label class="small opacity-50 mb-1">รหัสไปรษณีย์</label><input type="text" name="zipcode" class="form-control" value="<?= htmlspecialchars($order['zipcode']) ?>" <?= !in_array($order['status'], ['pending', 'processing']) ? 'disabled' : '' ?>></div>
                         <?php if(in_array($order['status'], ['pending', 'processing'])): ?>
-                            <button type="submit" name="update_shipping" class="btn btn-sm btn-outline-info rounded-pill w-100 mt-2 py-2">บันทึกข้อมูลใหม่</button>
+                            <button type="submit" name="update_shipping" class="btn btn-sm btn-outline-info rounded-pill w-100 mt-2 py-2 shadow-sm">บันทึกข้อมูลใหม่</button>
                         <?php endif; ?>
                     </div>
                 </form>
             </div>
             <div class="col-md-6 ps-md-4">
                 <h6 class="text-neon-pink mb-3 small fw-bold">การชำระเงิน</h6>
-                <div class="p-3 rounded-4 bg-black bg-opacity-30 border border-white border-opacity-10 text-center">
+                <div class="p-3 rounded-4 bg-black bg-opacity-30 border border-white border-opacity-10 text-center shadow-sm">
                     <p class="small mb-3">วิธีชำระ: <b><?= $order['payment_method'] == 'bank' ? 'โอนเงิน' : 'เก็บปลายทาง' ?></b></p>
                     <?php if($order['payment_method'] == 'bank'): ?>
                         <?php if(!empty($order['slip_image'])): ?>
-                            <img src="slips/<?= $order['slip_image'] ?>" class="w-50 rounded-3 border border-info mb-3" onclick="window.open(this.src)" style="cursor:pointer">
+                            <img src="slips/<?= $order['slip_image'] ?>" class="w-50 rounded-3 border border-info mb-3 shadow" onclick="window.open(this.src)" style="cursor:pointer">
                         <?php endif; ?>
                         <?php if(in_array($order['status'], ['pending', 'processing'])): ?>
-                            <form method="POST" enctype="multipart/form-data"><input type="file" name="slip_image" onchange="this.form.submit()" hidden id="s"><label for="s" class="btn btn-sm btn-outline-purple w-100 rounded-pill">แนบสลิปใหม่</label><input type="hidden" name="update_slip"></form>
+                            <form method="POST" enctype="multipart/form-data"><input type="file" name="slip_image" onchange="this.form.submit()" hidden id="s"><label for="s" class="btn btn-sm btn-outline-info w-100 rounded-pill">แนบสลิปใหม่</label><input type="hidden" name="update_slip"></form>
                         <?php endif; ?>
                     <?php else: ?>
                         <div class="py-4 opacity-50"><i class="bi bi-truck fs-1 d-block mb-2 text-neon-cyan"></i><span class="small">รอเก็บเงินเมื่อสินค้าถึงมือคุณ</span></div>
@@ -136,32 +137,63 @@ $items_q = $conn->query("SELECT od.*, p.name AS p_name, p.image AS p_image, pv.v
 
         <div class="mt-4 pt-2">
             <?php if($order['status'] == 'shipped'): ?>
-                <div class="p-4 custom-alert-neon text-center shadow-lg">
-                    <h5 class="fw-bold mb-3 text-neon-green"><i class="bi bi-box-seam"></i> สินค้าถึงมือคุณแล้วใช่ไหม?</h5>
-                    <form method="POST"><button type="submit" name="confirm_received" class="btn btn-success px-5 rounded-pill fw-bold">ยืนยันการรับสินค้า</button></form>
-                </div>
+                <button type="button" onclick="confirmReceive()" class="btn btn-success w-100 py-3 rounded-pill shadow fw-bold">ยืนยันการรับสินค้า</button>
             <?php elseif(in_array($order['status'], ['pending', 'processing'])): ?>
-                <button type="button" class="btn btn-outline-danger w-100 rounded-pill py-3 fw-bold" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">ยกเลิกคำสั่งซื้อนี้</button>
+                <button type="button" onclick="cancelOrder()" class="btn btn-outline-danger w-100 rounded-pill py-3 fw-bold shadow-sm">ยกเลิกคำสั่งซื้อนี้</button>
             <?php endif; ?>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <form class="modal-content text-center py-4 shadow-lg" method="POST">
-            <div class="modal-body">
-                <i class="bi bi-exclamation-octagon text-danger display-1 mb-4 d-block"></i>
-                <h3 class="fw-bold mb-3 text-neon-pink">ยืนยันการยกเลิก?</h3>
-                <input type="text" name="cancel_reason" class="form-control mb-4" placeholder="ระบุเหตุผลที่ต้องการยกเลิก..." required>
-                <div class="d-flex gap-3 justify-content-center">
-                    <button type="button" class="btn btn-outline-light px-4 rounded-pill" data-bs-dismiss="modal">ไม่ยกเลิก</button>
-                    <button type="submit" name="customer_cancel" class="btn btn-danger px-4 rounded-pill shadow fw-bold">ยืนยันการยกเลิก</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
+<form id="hiddenCancelForm" method="POST" style="display:none;">
+    <input type="hidden" name="customer_cancel" value="1">
+    <input type="hidden" name="cancel_reason" id="hiddenReason">
+</form>
+<form id="hiddenReceiveForm" method="POST" style="display:none;">
+    <input type="hidden" name="confirm_received" value="1">
+</form>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function cancelOrder() {
+        Swal.fire({
+            title: 'ยกเลิกออเดอร์?',
+            input: 'text',
+            inputLabel: 'ระบุเหตุผลที่ต้องการยกเลิก',
+            inputPlaceholder: 'เช่น เปลี่ยนใจ, ข้อมูลที่อยู่ผิด...',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f107a3',
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'ยืนยันการยกเลิก',
+            cancelButtonText: 'ย้อนกลับ'
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                document.getElementById('hiddenReason').value = result.value;
+                document.getElementById('hiddenCancelForm').submit();
+            } else if (result.isConfirmed && !result.value) {
+                Swal.fire('กรุณาระบุเหตุผล', '', 'error');
+            }
+        });
+    }
+
+    function confirmReceive() {
+        Swal.fire({
+            title: 'ยืนยันการรับสินค้า?',
+            text: "คุณได้รับสินค้าครบถ้วนและถูกต้องแล้วใช่หรือไม่?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#00ff88',
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'ใช่, ฉันได้รับแล้ว',
+            cancelButtonText: 'ยังไม่ได้รับ'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('hiddenReceiveForm').submit();
+            }
+        });
+    }
+</script>
 </body>
 </html>
