@@ -1,46 +1,52 @@
 <?php
-// --- [Logic 1]: การบันทึกข้อมูลสินค้าและรุ่นย่อย ---
+// --- [Logic]: การบันทึกข้อมูลสินค้าและรุ่นย่อย ---
 if (isset($_POST['save_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
     $cat_id = $_POST['category_id'];
     $desc = $conn->real_escape_string($_POST['description'] ?? '');
     $is_variant = $_POST['is_variant'];
     
-    // จัดการรูปภาพหลัก
+    // จัดการรูปภาพหลักของสินค้า
     $img_name = "default.png";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = time() . "_" . basename($_FILES['image']['name']);
         move_uploaded_file($_FILES['image']['tmp_name'], "images/" . $img_name);
     }
     
-    // ถ้าไม่มีรุ่นย่อย ให้ดึงค่าราคาและสต็อกหลัก
+    // กำหนดราคาและสต็อกสำหรับสินค้าที่ไม่มีรุ่นย่อย
     $pr = ($is_variant == 'no') ? $_POST['price'] : 0;
     $st = ($is_variant == 'no') ? $_POST['stock'] : 0;
     
     $conn->query("INSERT INTO products (name, price, stock, category_id, description, image) VALUES ('$name', '$pr', '$st', '$cat_id', '$desc', '$img_name')");
     $target_p_id = $conn->insert_id;
 
-    // ถ้าเลือก "มีรุ่นย่อย" ให้วนลูปบันทึกข้อมูลรุ่นย่อย
+    // ส่วนบันทึกรุ่นย่อย (พร้อมบันทึกรายละเอียดเพิ่มเติม)
     if($is_variant == 'yes' && isset($_POST['v_names'])) {
         foreach($_POST['v_names'] as $i => $vname) {
             $vprice = $_POST['v_prices'][$i]; 
             $vstock = $_POST['v_stocks'][$i]; 
+            // รับค่ารายละเอียดของรุ่นย่อยแต่ละรุ่น
+            $vdesc = $conn->real_escape_string($_POST['v_descriptions'][$i] ?? ''); 
+            
             $vimg = "";
             if (isset($_FILES['v_images']['name'][$i]) && $_FILES['v_images']['error'][$i] == 0) {
                 $vimg = "v_" . time() . "_" . $i . "_" . basename($_FILES['v_images']['name'][$i]);
                 move_uploaded_file($_FILES['v_images']['tmp_name'][$i], "images/" . $vimg);
             }
-            $conn->query("INSERT INTO product_variants (product_id, variant_name, price, stock, variant_image) VALUES ($target_p_id, '$vname', '$vprice', $vstock, '$vimg')");
+            // แทรกข้อมูลลงในตาราง product_variants (ตรวจสอบให้แน่ใจว่าพี่เพิ่มคอลัมน์ใน SQL แล้ว)
+            $conn->query("INSERT INTO product_variants (product_id, variant_name, price, stock, variant_image, variant_description) 
+                          VALUES ($target_p_id, '$vname', '$vprice', $vstock, '$vimg', '$vdesc')");
         }
     }
     echo "<script>window.location='admin_dashboard.php?tab=products&success=1';</script>";
 }
 
+// ดึงข้อมูลสินค้าทั้งหมดมาแสดงผล
 $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC");
 ?>
 
 <style>
-    /* ปรับแต่ง UI ให้มีความสว่างและนีออน */
+    /* ตกแต่งธีม Dark Neon และความสว่างของตัวหนังสือ */
     .text-white-bright { color: #ffffff !important; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px rgba(0, 242, 254, 0.6); }
     .text-neon-purple { color: #bb86fc !important; text-shadow: 0 0 10px rgba(187, 134, 252, 0.6); }
@@ -132,10 +138,12 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                             <option value="no">ไม่มี</option><option value="yes">มี</option>
                         </select>
                     </div>
+                    
                     <div id="no_variant_row" class="row g-3 px-0 mx-0 mt-2">
                         <div class="col-md-6"><label class="small fw-bold mb-2">ราคาขาย (฿)</label><input type="number" name="price" class="form-control"></div>
                         <div class="col-md-6"><label class="small fw-bold mb-2">จำนวนสต็อก</label><input type="number" name="stock" class="form-control"></div>
                     </div>
+                    
                     <div class="col-12 mt-3"><label class="small fw-bold mb-2">อัปโหลดรูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
                     
                     <div id="variant_section_box" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
@@ -160,7 +168,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
             <div class="modal-body">
                 <i class="bi bi-exclamation-triangle text-danger display-1 mb-4"></i>
                 <h3 class="fw-bold mb-3 text-white-bright">ยืนยันการลบสินค้า?</h3>
-                <p class="text-white-bright opacity-90 mb-4 fs-5">ลบ <span id="delProdName" class="text-danger fw-bold"></span>?<br>ข้อมูลสต็อกจะหายไปถาวร</p>
+                <p class="text-white-bright opacity-90 mb-4 fs-5">ลบ <span id="delProdName" class="text-danger fw-bold"></span>?</p>
                 <div class="d-flex gap-3 justify-content-center">
                     <button type="button" class="btn btn-outline-light px-4 rounded-pill" data-bs-dismiss="modal">ยกเลิก</button>
                     <a href="#" id="finalDeleteBtn" class="btn btn-danger px-4 rounded-pill fw-bold">ยืนยันลบ</a>
@@ -171,8 +179,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 </div>
 
 <script>
-// --- [JavaScript]: ควบคุมฟังก์ชันรุ่นย่อยและการลบ ---
-
+// ฟังก์ชันสลับการแสดงผลรุ่นย่อย
 function toggleVariantDisplay(val) {
     if (val === 'yes') {
         $('#variant_section_box').slideDown(); 
@@ -183,13 +190,14 @@ function toggleVariantDisplay(val) {
     }
 }
 
+// ฟังก์ชันเพิ่มแถวรุ่นย่อย (เพิ่มช่องรายละเอียดรายละเอียดเพิ่มเติม)
 function addVariantRowAction() {
     const html = `
         <div class="variant-item-row bg-black bg-opacity-25 p-3 rounded-3 mb-3 border border-secondary shadow-sm">
             <div class="row g-2">
                 <div class="col-md-4">
                     <label class="small text-white-bright mb-1">ชื่อลาย/รุ่น</label>
-                    <input type="text" name="v_names[]" class="form-control" placeholder="เช่น ลายปลาห้อย" required>
+                    <input type="text" name="v_names[]" class="form-control" required>
                 </div>
                 <div class="col-md-3">
                     <label class="small text-white-bright mb-1">ราคา (฿)</label>
@@ -202,6 +210,10 @@ function addVariantRowAction() {
                 <div class="col-md-3">
                     <label class="small text-white-bright mb-1">รูปเฉพาะรุ่น</label>
                     <input type="file" name="v_images[]" class="form-control">
+                </div>
+                <div class="col-12 mt-2">
+                    <label class="small text-white-bright mb-1">รายละเอียดเพิ่มเติม (วัสดุ, ขนาด, ลายละเอียด)</label>
+                    <textarea name="v_descriptions[]" class="form-control" rows="2" placeholder="ระบุข้อมูลเฉพาะของรุ่นนี้..."></textarea>
                 </div>
                 <div class="col-12 text-end mt-2">
                     <button type="button" class="btn btn-xs btn-outline-danger" onclick="$(this).closest('.variant-item-row').remove()">ลบแถวนี้</button>
