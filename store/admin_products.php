@@ -13,7 +13,7 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
 <div class="glass-panel">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="text-neon-cyan"><i class="bi bi-box-seam me-2"></i>สินค้า & สต็อก</h4>
-        <a href="add_product.php" class="btn btn-neon-pink rounded-pill px-4">
+        <a href="edit_product.php" class="btn btn-neon-pink rounded-pill px-4">
             <i class="bi bi-plus-circle me-2"></i>เพิ่มสินค้าใหม่
         </a>
     </div>
