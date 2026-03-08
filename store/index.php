@@ -4,21 +4,23 @@ include "connectdb.php";
 
 /* ================= [ส่วนที่ปรับเพิ่ม]: แก้ไข SQL ให้สอดคล้องกับ Database ล่าสุด ================= */
 $category_slug = $_GET['category'] ?? "";
-$search = $_GET['search'] ?? "";
+$search = $_GET['search'] ?? ""; // รับค่าจากช่องค้นหา
 $categories = $conn->query("SELECT * FROM categories ORDER BY name ASC");
 
 $sql = "SELECT products.*, categories.name as category_name, categories.slug FROM products LEFT JOIN categories ON products.category_id = categories.id WHERE 1";
 if($category_slug && $category_slug != "all"){ $sql .= " AND categories.slug = '".$conn->real_escape_string($category_slug)."'"; }
+
+// ปรับให้พิมพ์ตัวเดียวแล้วขึ้น: ใช้ LIKE %...% เพื่อค้นหาชื่อสินค้าที่มีตัวอักษรนั้นอยู่
 if($search){ $sql .= " AND products.name LIKE '%".$conn->real_escape_string($search)."%'"; }
 
 $showLanding = (!$category_slug && !$search);
 if(!$showLanding){ $products = $conn->query($sql); }
 
-// 1. ปรับดึงสินค้าแนะนำจากคอลัมน์ is_hot แทน featured
-$recommended = $conn->query("SELECT * FROM products WHERE is_hot=1 LIMIT 8"); 
+// 1. ปรับดึงสินค้าแนะนำจากคอลัมน์ is_hot แทน featured (เพื่อให้ตรงกับ Database)
+$recommended = $conn->query("SELECT * FROM products WHERE is_hot=1 LIMIT 8");
 
 // 2. ปรับสินค้ามาใหม่ให้ไม่ซ้ำกับสินค้าแนะนำ (เพิ่ม WHERE is_hot=0)
-$newArrival = $conn->query("SELECT * FROM products WHERE is_hot=0 ORDER BY id DESC LIMIT 8"); 
+$newArrival = $conn->query("SELECT * FROM products WHERE is_hot=0 ORDER BY id DESC LIMIT 8");
 
 $discountProducts = $conn->query("SELECT * FROM products WHERE discount > 0 LIMIT 8");
 
@@ -41,7 +43,7 @@ if(isset($_SESSION['user_id'])){
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
-/* --- Neon Glassmorphism Theme (คงเดิมของคุณทั้งหมด) --- */
+/* --- Neon Glassmorphism Theme (คงเดิมของคุณทั้งหมด 100%) --- */
 body {
     background: radial-gradient(circle at 20% 30%, #4b2c63 0%, transparent 40%), 
                 radial-gradient(circle at 80% 70%, #6a1b9a 0%, transparent 40%), 
