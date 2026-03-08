@@ -1,11 +1,12 @@
 <?php
-// --- [Logic 1]: ส่วนการประมวลผล PHP (คงเดิม 100%) ---
+// --- [Logic 1]: บันทึกสินค้าใหม่ / อัปเดตสินค้าเดิม ---
 if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
     $cat_id = intval($_POST['category_id']);
     $desc = $conn->real_escape_string($_POST['description'] ?? '');
     $is_variant = $_POST['is_variant'];
     
+    // จัดการรูปภาพหลัก
     $img_name = $_POST['existing_image'] ?? "default.png";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = time() . "_" . basename($_FILES['image']['name']);
@@ -23,14 +24,15 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
         $p_id = $conn->insert_id;
     }
 
+    // จัดการรุ่นย่อย (Variants)
     if($is_variant == 'yes' && isset($_POST['v_names'])) {
         foreach($_POST['v_names'] as $i => $vname) {
             $v_id = $_POST['v_ids'][$i] ?? 'new';
             $vprice = $_POST['v_prices'][$i]; 
             $vstock = $_POST['v_stocks'][$i];
             $vdesc = $conn->real_escape_string($_POST['v_descriptions'][$i] ?? '');
-            $vimg = $_POST['existing_v_images'][$i] ?? "";
             
+            $vimg = $_POST['existing_v_images'][$i] ?? "";
             if (isset($_FILES['v_images']['name'][$i]) && $_FILES['v_images']['error'][$i] == 0) {
                 $vimg = "v_" . time() . "_" . $i . "_" . basename($_FILES['v_images']['name'][$i]);
                 move_uploaded_file($_FILES['v_images']['tmp_name'][$i], "images/" . $vimg);
@@ -46,7 +48,7 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     echo "<script>window.location='admin_dashboard.php?tab=products&success=1';</script>";
 }
 
-// --- [Logic 2]: ส่วน AJAX สำหรับดึงข้อมูล JSON มาแสดงใน Modal แก้ไข ---
+// --- [Logic 2]: ส่วน AJAX เพื่อส่งข้อมูล JSON ไปที่หน้าแก้ไข (ห้ามลบ) ---
 if (isset($_GET['get_product_json'])) {
     $id = intval($_GET['get_product_json']);
     $p = $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc();
@@ -60,10 +62,10 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 ?>
 
 <style>
-    /* ปรับแต่งความสว่างและธีมนีออนตามที่พี่ต้องการ */
+    /* ปรับแต่งความสว่างตัวหนังสือและธีมนีออน */
     .text-white-bright { color: #ffffff !important; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
-    .btn-edit-neon { border: 1px solid #ffc107 !important; color: #ffc107 !important; background: transparent !important; transition: 0.3s; }
+    .btn-edit-neon { border: 1px solid #ffc107 !important; color: #ffc107 !important; background: transparent !important; }
     .btn-edit-neon:hover { background: #ffc107 !important; color: #000 !important; box-shadow: 0 0 15px #ffc107; }
     .form-control, .form-select { background: rgba(255,255,255,0.1) !important; color: #ffffff !important; border: 1px solid rgba(187, 134, 252, 0.4) !important; }
 </style>
@@ -83,7 +85,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
             </thead>
             <tbody>
                 <?php while($p = $products->fetch_assoc()): ?>
-                <tr class="align-middle">
+                <tr class="align-middle border-bottom border-white border-opacity-5">
                     <td><img src="images/<?= $p['image'] ?>" width="60" height="60" class="rounded-3 border border-info" style="object-fit:cover;"></td>
                     <td class="text-white-bright fw-bold"><?= htmlspecialchars($p['name']) ?></td>
                     <td class="text-neon-cyan fw-bold">฿<?= number_format($p['price']) ?></td>
@@ -122,7 +124,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                             <?php $cl = $conn->query("SELECT * FROM categories"); while($c=$cl->fetch_assoc()) echo "<option value='{$c['id']}'>{$c['name']}</option>"; ?>
                         </select>
                     </div>
-                    <div class="col-md-3"><label class="small fw-bold mb-2">รุ่นย่อย?</label>
+                    <div class="col-md-3"><label class="small fw-bold mb-2">มีรุ่นย่อย?</label>
                         <select name="is_variant" id="v_select_field" class="form-select" onchange="toggleVariantDisplay(this.value)">
                             <option value="no">ไม่มี</option><option value="yes">มี</option>
                         </select>
@@ -131,7 +133,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
                         <div class="col-md-6"><label class="small fw-bold mb-2">ราคา</label><input type="number" name="price" id="form_price" class="form-control"></div>
                         <div class="col-md-6"><label class="small fw-bold mb-2">สต็อก</label><input type="number" name="stock" id="form_stock" class="form-control"></div>
                     </div>
-                    <div class="col-12 mt-3"><label class="small fw-bold mb-2">รูปภาพสินค้า</label><input type="file" name="image" class="form-control"></div>
+                    <div class="col-12 mt-3"><label class="small fw-bold mb-2">รูปภาพสินค้าหลัก</label><input type="file" name="image" class="form-control"></div>
                     <div id="variant_section_box" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="text-neon-cyan fw-bold mb-0">รายการรุ่นย่อย</h6>
@@ -149,7 +151,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 </div>
 
 <script>
-// --- [JavaScript]: ส่วนควบคุมฟังก์ชันเพื่อให้ปุ่มกดทำงานได้จริง ---
+// --- [JavaScript]: ส่วนควบคุมปุ่มกดและ Modal ---
 
 function toggleVariantDisplay(val) {
     if (val === 'yes') { $('#variant_section_box').stop().slideDown(); $('#no_variant_row').stop().slideUp(); } 
@@ -163,14 +165,14 @@ function openAddModal() {
     $('#form_p_id').val('');
     $('#variant_list_container').empty();
     toggleVariantDisplay('no');
-    // ใช้คำสั่งมาตรฐานเพื่อเรียก Modal
+    // เปิดหน้าต่าง Modal
     var myModal = new bootstrap.Modal(document.getElementById('pModalFull'));
     myModal.show();
 }
 
 function openEditModal(pid) {
     $('#variant_list_container').empty();
-    // ดึงข้อมูลผ่าน AJAX มาใส่ใน Modal
+    // ดึงข้อมูลผ่าน AJAX มาแสดงผลในช่องกรอก
     $.ajax({
         url: 'admin_products.php',
         type: 'GET',
@@ -194,7 +196,7 @@ function openEditModal(pid) {
                 $('#form_price').val(data.product.price);
                 $('#form_stock').val(data.product.stock);
             }
-            // แสดงหน้าต่างแก้ไข
+            // เด้งหน้าต่างขึ้นมาแก้ไข
             var editModal = new bootstrap.Modal(document.getElementById('pModalFull'));
             editModal.show();
         },
@@ -215,11 +217,11 @@ function addVariantRowAction(data = null) {
             <input type="hidden" name="v_ids[]" value="${vid}">
             <input type="hidden" name="existing_v_images[]" value="${vimg_old}">
             <div class="row g-2">
-                <div class="col-md-4"><label class="small">ลาย/รุ่น</label><input type="text" name="v_names[]" class="form-control" value="${vname}" required></div>
-                <div class="col-md-3"><label class="small">ราคา</label><input type="number" name="v_prices[]" class="form-control" value="${vprice}" required></div>
-                <div class="col-md-2"><label class="small">สต็อก</label><input type="number" name="v_stocks[]" class="form-control" value="${vstock}" required></div>
-                <div class="col-md-3"><label class="small">รูป</label><input type="file" name="v_images[]" class="form-control"></div>
-                <div class="col-12 mt-2"><label class="small">รายละเอียด</label><textarea name="v_descriptions[]" class="form-control" rows="2">${vdesc}</textarea></div>
+                <div class="col-md-4"><label class="small text-white-bright mb-1">ชื่อลาย/รุ่น</label><input type="text" name="v_names[]" class="form-control" value="${vname}" required></div>
+                <div class="col-md-3"><label class="small text-white-bright mb-1">ราคา</label><input type="number" name="v_prices[]" class="form-control" value="${vprice}" required></div>
+                <div class="col-md-2"><label class="small text-white-bright mb-1">สต็อก</label><input type="number" name="v_stocks[]" class="form-control" value="${vstock}" required></div>
+                <div class="col-md-3"><label class="small text-white-bright mb-1">รูปเฉพาะรุ่น</label><input type="file" name="v_images[]" class="form-control"></div>
+                <div class="col-12 mt-2"><label class="small text-white-bright mb-1">รายละเอียดเพิ่มเติม</label><textarea name="v_descriptions[]" class="form-control" rows="2">${vdesc}</textarea></div>
                 <div class="col-12 text-end mt-2"><button type="button" class="btn btn-xs btn-outline-danger" onclick="$(this).closest('.variant-item-row').remove()">ลบแถวนี้</button></div>
             </div>
         </div>`;
