@@ -1,27 +1,43 @@
 <?php
-// ห้าม include "admin_dashboard.php" หรือ "connectdb.php" ซ้ำในนี้เด็ดขาด
-// เพราะไฟล์ admin_dashboard.php (ไฟล์แม่) ทำไว้ให้แล้ว
-
-// [ปรับเพิ่ม]: SQL เพื่อดึงราคาต่ำสุด (min_v_price) และสต็อกรวม (total_v_stock) จากตารางรุ่นย่อย
+// ห้าม include "admin_dashboard.php" หรือ "connectdb.php" ซ้ำ
+// ใช้ SQL เดิมที่มึงทำไว้ดีอยู่แล้ว
 $sql_p = "SELECT p.*, c.name AS cat_name,
           (SELECT MIN(price) FROM product_variants WHERE product_id = p.id) as min_v_price,
           (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_v_stock
           FROM products p 
           LEFT JOIN categories c ON p.category_id = c.id 
           ORDER BY p.id DESC";
-
-$result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จากไฟล์แม่ได้เลย
+$result_p = $conn->query($sql_p);
 ?>
 
 <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
 
 <style>
-    /* ปรับแต่งสไตล์ของ SweetAlert ให้เข้ากับธีมร้าน */
+    /* [ปรับเพิ่ม]: สไตล์ SweetAlert ให้เนียนกริบกับธีมม่วงนีออน */
     .swal2-popup {
-        border: 2px solid #f107a3 !important;
-        border-radius: 25px !important;
-        background: #1a0028 !important;
-        font-family: 'Segoe UI', sans-serif;
+        background: #1a0028 !important; /* พื้นหลังม่วงเข้มมืด */
+        border: 2px solid #f107a3 !important; /* ขอบนีออนชมพู */
+        border-radius: 30px !important;
+        box-shadow: 0 0 30px rgba(241, 7, 163, 0.4) !important; /* เงาเรืองแสง */
+    }
+    .swal2-title { color: #00f2fe !important; font-weight: 700 !important; } /* หัวข้อนีออนฟ้า */
+    .swal2-html-container { color: rgba(255,255,255,0.8) !important; }
+    
+    /* สไตล์ปุ่มในป๊อปอัพ */
+    .custom-swal-confirm {
+        background: linear-gradient(135deg, #f107a3, #ff0080) !important;
+        color: #fff !important;
+        border-radius: 50px !important;
+        padding: 10px 25px !important;
+        font-weight: bold !important;
+        box-shadow: 0 4px 15px rgba(241, 7, 163, 0.4) !important;
+    }
+    .custom-swal-cancel {
+        background: rgba(255,255,255,0.1) !important;
+        color: #fff !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        border-radius: 50px !important;
+        padding: 10px 25px !important;
     }
 </style>
 
@@ -47,37 +63,17 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
             <tbody>
                 <?php if ($result_p && $result_p->num_rows > 0): ?>
                     <?php while($row = $result_p->fetch_assoc()): 
-                        // ตรรกะการแสดงผล: ถ้ามีรุ่นย่อยให้ใช้ค่าจากรุ่นย่อย ถ้าไม่มีให้ใช้จากตารางหลัก
                         $display_price = ($row['min_v_price'] > 0) ? $row['min_v_price'] : $row['price'];
                         $display_stock = ($row['total_v_stock'] !== null) ? $row['total_v_stock'] : $row['stock'];
                     ?>
                     <tr>
-                        <td>
-                            <img src="images/<?= $row['image'] ?>" class="rounded" 
-                                 style="width: 50px; height: 50px; object-fit: cover; border: 1px solid rgba(187, 134, 252, 0.4);" 
-                                 onerror="this.src='https://via.placeholder.com/50'">
-                        </td>
-                        <td>
-                            <div class="fw-bold text-white"><?= $row['name'] ?></div>
-                            <small class="text-white-50">หมวดหมู่: <?= $row['cat_name'] ?? 'ทั่วไป' ?></small>
-                        </td>
-                        <td class="text-neon-cyan fw-bold">
-                            <?= ($row['min_v_price'] > 0) ? "เริ่มต้น " : "" ?>฿<?= number_format($display_price) ?>
-                        </td>
-                        <td>
-                            <span class="badge rounded-pill bg-dark border border-secondary px-3">
-                                <?= $display_stock ?> ชิ้น
-                            </span>
-                        </td>
+                        <td><img src="images/<?= $row['image'] ?>" class="rounded" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid rgba(187, 134, 252, 0.4);"></td>
+                        <td><div class="fw-bold text-white"><?= $row['name'] ?></div><small class="text-white-50"><?= $row['cat_name'] ?? 'ทั่วไป' ?></small></td>
+                        <td class="text-neon-cyan fw-bold"><?= ($row['min_v_price'] > 0) ? "เริ่มต้น " : "" ?>฿<?= number_format($display_price) ?></td>
+                        <td><span class="badge rounded-pill bg-dark border border-secondary px-3"><?= $display_stock ?> ชิ้น</span></td>
                         <td class="text-center">
-                            <a href="edit_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning border-0">
-                                <i class="bi bi-pencil-square fs-5"></i>
-                            </a>
-                            <a href="javascript:void(0)" 
-                               onclick="confirmDeleteProduct(<?= $row['id'] ?>, '<?= htmlspecialchars($row['name']) ?>')"
-                               class="btn btn-sm btn-outline-danger border-0">
-                                <i class="bi bi-trash fs-5"></i>
-                            </a>
+                            <a href="edit_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning border-0"><i class="bi bi-pencil-square fs-5"></i></a>
+                            <a href="javascript:void(0)" onclick="confirmDeleteProduct(<?= $row['id'] ?>, '<?= htmlspecialchars($row['name']) ?>')" class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash fs-5"></i></a>
                         </td>
                     </tr>
                     <?php endwhile; ?>
@@ -94,16 +90,19 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
 function confirmDeleteProduct(productId, productName) {
     Swal.fire({
         title: 'ยืนยันการลบสินค้า?',
-        text: "คุณกำลังจะลบ [" + productName + "] ข้อมูลนี้ไม่สามารถกู้คืนได้!",
+        html: `คุณกำลังจะลบ <b style="color:#f107a3">[${productName}]</b><br><small style="color:#aaa">ข้อมูลนี้จะหายไปจากระบบถาวร!</small>`,
         icon: 'warning',
+        iconColor: '#f107a3',
         showCancelButton: true,
-        confirmButtonColor: '#f107a3',
-        cancelButtonColor: '#aaa',
         confirmButtonText: 'ยืนยันการลบ',
-        cancelButtonText: 'ยกเลิก'
+        cancelButtonText: 'ยกเลิก',
+        customClass: {
+            confirmButton: 'custom-swal-confirm',
+            cancelButton: 'custom-swal-cancel'
+        },
+        buttonsStyling: false // ปิดสไตล์พื้นฐานเพื่อใช้ class ที่เราสร้างเอง
     }).then((result) => {
         if (result.isConfirmed) {
-            // ส่งไปที่ URL ลบสินค้าเดิมของคุณ
             window.location.href = "admin_dashboard.php?del_id=" + productId + "&type=product&tab=products";
         }
     });
