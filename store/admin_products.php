@@ -2,7 +2,10 @@
 // ห้าม include "admin_dashboard.php" หรือ "connectdb.php" ซ้ำในนี้เด็ดขาด
 // เพราะไฟล์ admin_dashboard.php (ไฟล์แม่) ทำไว้ให้แล้ว
 
-$sql_p = "SELECT p.*, c.name AS cat_name 
+// [ปรับเพิ่ม]: SQL เพื่อดึงราคาต่ำสุด (min_v_price) และสต็อกรวม (total_v_stock) จากตารางรุ่นย่อย
+$sql_p = "SELECT p.*, c.name AS cat_name,
+          (SELECT MIN(price) FROM product_variants WHERE product_id = p.id) as min_v_price,
+          (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_v_stock
           FROM products p 
           LEFT JOIN categories c ON p.category_id = c.id 
           ORDER BY p.id DESC";
@@ -31,7 +34,11 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
             </thead>
             <tbody>
                 <?php if ($result_p && $result_p->num_rows > 0): ?>
-                    <?php while($row = $result_p->fetch_assoc()): ?>
+                    <?php while($row = $result_p->fetch_assoc()): 
+                        // ตรรกะการแสดงผล: ถ้ามีรุ่นย่อยให้ใช้ค่าจากรุ่นย่อย ถ้าไม่มีให้ใช้จากตารางหลัก
+                        $display_price = ($row['min_v_price'] > 0) ? $row['min_v_price'] : $row['price'];
+                        $display_stock = ($row['total_v_stock'] !== null) ? $row['total_v_stock'] : $row['stock'];
+                    ?>
                     <tr>
                         <td>
                             <img src="images/<?= $row['image'] ?>" class="rounded" 
@@ -42,10 +49,12 @@ $result_p = $conn->query($sql_p); // ใช้ตัวแปร $conn จาก
                             <div class="fw-bold"><?= $row['name'] ?></div>
                             <small class="text-white-50">หมวดหมู่: <?= $row['cat_name'] ?? 'ทั่วไป' ?></small>
                         </td>
-                        <td class="text-neon-cyan fw-bold">฿<?= number_format($row['price']) ?></td>
+                        <td class="text-neon-cyan fw-bold">
+                            <?= ($row['min_v_price'] > 0) ? "เริ่มต้น " : "" ?>฿<?= number_format($display_price) ?>
+                        </td>
                         <td>
                             <span class="badge rounded-pill bg-dark border border-secondary px-3">
-                                <?= $row['stock'] ?> ชิ้น
+                                <?= $display_stock ?> ชิ้น
                             </span>
                         </td>
                         <td class="text-center">
