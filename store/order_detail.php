@@ -16,6 +16,7 @@ if (isset($_POST['confirm_received'])) {
 // --- [Logic 2]: ลูกค้ายกเลิกออเดอร์เอง ---
 if (isset($_POST['customer_cancel'])) {
     $reason = $conn->real_escape_string($_POST['cancel_reason'] ?? 'ลูกค้ายกเลิกเองผ่านหน้าเว็บ');
+    // [จุดที่แก้]: ระบุชัดเจนว่าเป็นลูกค้ายกเลิก
     $sql_cancel = "UPDATE orders SET status = 'cancelled', cancel_by = 'customer', cancel_reason = '$reason' 
                    WHERE id = $order_id AND user_id = $user_id AND status IN ('pending', 'processing')";
     if($conn->query($sql_cancel)) { header("Location: order_detail.php?id=$order_id&cancelled=1"); exit(); }

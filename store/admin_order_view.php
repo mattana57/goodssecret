@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_status'])) {
     
     $cancel_sql = "";
     if($new_status === 'cancelled') {
+        // [จุดที่แก้]: ต้องระบุชัดเจนว่าเป็น admin เท่านั้นที่กดยกเลิกจากหน้านี้
         $cancel_sql = ", cancel_by = 'admin', cancel_reason = '$cancel_reason'";
     } else {
         $cancel_sql = ", cancel_reason = ''";
@@ -55,7 +56,6 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         .step-btn { transition: 0.3s; border-radius: 50px; font-weight: bold; padding: 10px 20px; border: 1px solid transparent; }
         .product-img-td { width: 65px; height: 65px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
         .alert-neon-danger { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 15px; }
-        /* Custom SweetAlert Style */
         .swal2-popup { border: 2px solid #bb86fc !important; border-radius: 25px !important; background: #1a0028 !important; }
     </style>
 </head>
@@ -129,7 +129,6 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // ฟังก์ชันทั่วไปสำหรับการเปลี่ยนสถานะ
     function updateStatus(newStatus) {
         Swal.fire({
             title: 'ยืนยันการเปลี่ยนสถานะ?',
@@ -149,13 +148,12 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         });
     }
 
-    // ฟังก์ชันเฉพาะสำหรับการยกเลิกโดย Admin พร้อมระบุเหตุผล
     function cancelByAdmin() {
         Swal.fire({
             title: 'ยกเลิกคำสั่งซื้อ',
             input: 'text',
             inputLabel: 'ระบุเหตุผลการยกเลิกโดยแอดมิน',
-            inputPlaceholder: 'เช่น สินค้าหมด หรือ ข้อมูลที่อยู่ไม่ชัดเจน...',
+            inputPlaceholder: 'เช่น สินค้าหมด...',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ff4d4d',
