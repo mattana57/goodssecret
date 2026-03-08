@@ -14,7 +14,7 @@ $variant_id = isset($_GET['variant_id']) && $_GET['variant_id'] != "" ? intval($
 $action = $_GET['action'] ?? '';
 
 if($product_id > 0 && $qty > 0){
-    /* --- [ส่วนที่ปรับปรุง]: ดึงราคาให้ถูกต้องตามรุ่นที่เลือก --- */
+    /* --- [ส่วนที่เพิ่ม]: ดึงราคาให้ถูกต้องก่อนบันทึก --- */
     if ($variant_id > 0) {
         // ดึงราคาจากตารางรุ่นย่อย
         $res = $conn->query("SELECT price FROM product_variants WHERE id = $variant_id");
@@ -32,7 +32,7 @@ if($product_id > 0 && $qty > 0){
     if($check->num_rows > 0){
         $conn->query("UPDATE cart SET quantity = quantity + $qty WHERE user_id = $user_id AND product_id = $product_id AND variant_id = $variant_id");
     } else {
-        /* --- [ส่วนที่ปรับปรุง]: บันทึกราคา (price) ลงในตาราง cart เพื่อให้หน้า cart.php ดึงไปใช้ง่ายๆ --- */
+        /* --- [ส่วนที่แก้]: มึงต้องบันทึกราคา (price) ลงไปด้วยนะ ราคามันถึงจะไม่เป็น 0 --- */
         $conn->query("INSERT INTO cart (user_id, product_id, quantity, variant_id, price) VALUES ($user_id, $product_id, $qty, $variant_id, $price)");
     }
 }

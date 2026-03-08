@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// --- [ระบบจัดการจำนวนสินค้า (บวกลบ)]: คงเดิมตามไฟล์ล่าสุดของคุณ ---
+// --- [ระบบจัดการจำนวนสินค้า (บวกลบ)]: คงเดิมตามไฟล์ของคุณ ---
 if (isset($_GET['action']) && isset($_GET['product_id'])) {
     $p_id = intval($_GET['product_id']);
     $v_id = isset($_GET['variant_id']) ? intval($_GET['variant_id']) : 0;
@@ -32,7 +32,7 @@ if (isset($_GET['delete_id'])) {
     exit();
 }
 
-/* --- [จุดแก้ไข]: ปรับ Query ให้ Join ข้อมูลจากตารางรุ่นย่อย เพื่อเอาชื่อ ราคา และรูปภาพเฉพาะรุ่นมาแสดง --- */
+/* --- [ปรับปรุง Query]: Join ตารางรุ่นย่อยเพื่อให้ดึงชื่อรุ่นและรูปภาพเฉพาะรุ่นมาแสดง --- */
 $sql = "SELECT cart.*, products.name, products.image as p_img, pv.variant_name, pv.variant_image 
         FROM cart 
         JOIN products ON cart.product_id = products.id 
@@ -49,7 +49,7 @@ $result = $conn->query($sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        /* --- [โค้ด CSS เดิมของคุณทั้งหมด 100% ไม่ตัดทอน] --- */
+        /* --- [โค้ด CSS เดิมของคุณทั้งหมด ห้ามตัด] --- */
         body {
             background-color: #0f172a;
             color: #ffffff !important;
@@ -57,12 +57,8 @@ $result = $conn->query($sql);
                               radial-gradient(circle at bottom left, #1e1b4b, transparent);
             min-height: 100vh;
         }
-        h2, h4, h5 {
-            color: #ffffff !important;
-            font-weight: 700;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-        }
-        .table { color: #ffffff !important; }
+        h2, h4, h5 { color: #ffffff !important; font-weight: 700; text-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
+        .table { color: #ffffff !important; --bs-table-bg: transparent !important; }
         .table thead th {
             color: #bb86fc !important;
             border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important;
@@ -72,10 +68,7 @@ $result = $conn->query($sql);
         }
         .fw-bold.text-white, .fs-5.text-white { color: #ffffff !important; }
         .text-secondary-bright { color: #e2e8f0 !important; }
-        .text-neon-cyan {
-            color: #00f2fe !important; 
-            text-shadow: 0 0 12px rgba(0, 242, 254, 0.6);
-        }
+        .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 12px rgba(0, 242, 254, 0.6); }
         .glass-panel {
             background: rgba(255, 255, 255, 0.03) !important;
             backdrop-filter: blur(10px);
@@ -89,7 +82,6 @@ $result = $conn->query($sql);
             border-color: rgba(187, 134, 252, 0.6) !important;
             transform: translateY(-5px);
         }
-        .table { --bs-table-bg: transparent !important; background-color: transparent !important; }
         .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); }
         .btn-checkout {
             background: linear-gradient(135deg, #f107a3, #ff0080) !important;
@@ -100,10 +92,10 @@ $result = $conn->query($sql);
         .btn-checkout:hover { transform: translateY(-5px); filter: brightness(1.2); }
         .btn-remove { color: rgba(255, 255, 255, 0.4); font-size: 1.2rem; transition: 0.3s; cursor: pointer; }
         .btn-remove:hover { color: #ff4d4d; transform: rotate(15deg) scale(1.2); }
-        .modal-content.delete-popup { background: rgba(40, 0, 10, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 25px; color: #fff; }
         .qty-btn { color: #bb86fc; font-size: 1.2rem; text-decoration: none; transition: 0.2s; }
         .qty-btn:hover { color: #00f2fe; transform: scale(1.1); }
         .qty-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(187,134,252,0.3); border-radius: 8px; min-width: 40px; display: inline-block; }
+        .modal-content.delete-popup { background: rgba(40, 0, 10, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 25px; color: #fff; }
     </style>
 </head>
 <body>
@@ -130,10 +122,10 @@ $result = $conn->query($sql);
                             <?php 
                             $grand_total = 0;
                             while($row = $result->fetch_assoc()): 
-                                /* --- [ปรับแต่ง]: ใช้ค่า price จากตาราง cart ที่บันทึกมาถูกต้องแล้ว --- */
+                                // ใช้ราคาจากตาราง cart ที่บันทึกมาจาก add_to_cart.php
                                 $subtotal = $row['price'] * $row['quantity'];
                                 $grand_total += $subtotal;
-                                /* --- [ปรับแต่ง]: แสดงรูปภาพตามรุ่นที่เลือก (ถ้ามี) --- */
+                                // ตรวจสอบรูปภาพ: ถ้ามีรูปเฉพาะรุ่นให้ใช้รูปนั้น
                                 $display_img = (!empty($row['variant_image'])) ? $row['variant_image'] : $row['p_img'];
                             ?>
                             <tr style="vertical-align: middle;">
@@ -179,11 +171,11 @@ $result = $conn->query($sql);
         <div class="col-lg-4">
             <div class="glass-panel p-3">
                 <h4 class="mb-4 text-white">สรุปการสั่งซื้อ</h4>
-                <div class="d-flex justify-content-between mb-3 fs-5"><span class="text-secondary-bright">ยอดรวม</span><span class="text-white">฿<?= number_format($grand_total ?? 0) ?></span></div>
-                <div class="d-flex justify-content-between mb-3 fs-5"><span class="text-secondary-bright">ค่าส่ง</span><span class="text-success fw-bold">ฟรี</span></div>
+                <div class="d-flex justify-content-between mb-3 fs-5"><span>ยอดรวม</span><span class="text-white">฿<?= number_format($grand_total ?? 0) ?></span></div>
+                <div class="d-flex justify-content-between mb-3 fs-5"><span>ค่าส่ง</span><span class="text-success fw-bold">ฟรี</span></div>
                 <hr class="my-4 border-secondary opacity-50">
                 <div class="d-flex justify-content-between mb-5"><span class="h4 text-white">รวมสุทธิ</span><span class="h3 fw-bold text-neon-cyan">฿<?= number_format($grand_total ?? 0) ?></span></div>
-                <a href="checkout.php" class="btn btn-checkout text-decoration-none d-flex align-items-center justify-content-center">ชำระเงิน <i class="bi bi-arrow-right-circle ms-2"></i></a>
+                <a href="checkout.php" class="btn btn-checkout text-decoration-none d-flex align-items-center justify-content-center <?= ($grand_total > 0) ? '' : 'disabled' ?>">ชำระเงิน <i class="bi bi-arrow-right-circle ms-2"></i></a>
             </div>
         </div>
     </div>
@@ -193,7 +185,7 @@ $result = $conn->query($sql);
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content delete-popup text-center py-5">
             <div class="modal-body">
-                <div class="mb-4"><i class="bi bi-trash3 neon-delete-icon" style="font-size: 4rem; color: #ff4d4d;"></i></div>
+                <i class="bi bi-trash3 mb-4" style="font-size: 4rem; color: #ff4d4d;"></i>
                 <h3 class="fw-bold mb-3" style="color: #ff4d4d;">ยืนยันการลบ?</h3>
                 <p class="fs-5 opacity-75 mb-4 text-white">ลบสินค้าชิ้นนี้ออกจากตะกร้า?</p>
                 <div class="d-flex justify-content-center gap-3">
