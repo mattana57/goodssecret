@@ -37,15 +37,51 @@ if (isset($_GET['ajax_action'])) {
         $conn->query("UPDATE product_variants SET stock = $new_val WHERE id = $vid");
         echo $new_val; exit();
     }
+    // --- [ส่วนที่แก้ไข]: ส่วน AJAX สำหรับดึงประวัติลูกค้าพร้อมปุ่มจัดการ ---
     if ($_GET['ajax_action'] == 'get_user_history') {
         $uid = intval($_GET['uid']);
+        // ดึงข้อมูลออเดอร์เรียงจากล่าสุดไปเก่า
         $q = $conn->query("SELECT * FROM orders WHERE user_id = $uid ORDER BY created_at DESC");
-        $html = '<table class="table table-hover small text-white"><thead><tr class="text-info"><th>บิล ID</th><th>วันที่</th><th>ยอดรวม</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>';
+        
+        $html = '<table class="table table-hover small text-white">
+                    <thead>
+                        <tr class="text-info">
+                            <th>บิล ID</th>
+                            <th>วันที่</th>
+                            <th>ยอดรวม</th>
+                            <th>สถานะ</th>
+                            <th class="text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>';
+        
         while($r = $q->fetch_assoc()) {
-            $html .= "<tr><td>#".str_pad($r['id'],5,'0',STR_PAD_LEFT)."</td><td>".date('d/m/y', strtotime($r['created_at']))."</td><td class='text-neon-cyan'>฿".number_format($r['total_price'])."</td><td>{$r['status']}</td></tr>";
+            // กำหนดสีสถานะให้สอดคล้องกับหน้า admin_orders_list.php
+            $status_color = "";
+            if($r['status'] == 'delivered') $status_color = "text-success";
+            elseif($r['status'] == 'cancelled') $status_color = "text-danger";
+            elseif($r['status'] == 'shipped') $status_color = "text-info";
+            else $status_color = "text-warning";
+
+            $html .= "<tr class='align-middle'>
+                        <td class='fw-bold'>#".str_pad($r['id'],5,'0',STR_PAD_LEFT)."</td>
+                        <td>".date('d/m/y', strtotime($r['created_at']))."</td>
+                        <td class='text-neon-cyan'>฿".number_format($r['total_price'])."</td>
+                        <td><span class='fw-bold {$status_color}'>".strtoupper($r['status'])."</span></td>
+                        <td class='text-center'>
+                            <a href='admin_order_view.php?id={$r['id']}' class='btn btn-xs btn-outline-info rounded-pill px-3 py-1' style='font-size: 0.75rem;'>
+                                <i class='bi bi-search me-1'></i> ดูรายละเอียด
+                            </a>
+                        </td>
+                      </tr>";
         }
-        if($q->num_rows == 0) $html .= '<tr><td colspan="4" class="text-center opacity-50">ไม่มีประวัติ</td></tr>';
-        echo $html . '</tbody></table>'; exit();
+        
+        if($q->num_rows == 0) {
+            $html .= '<tr><td colspan="5" class="text-center py-4 opacity-50">ไม่พบประวัติการสั่งซื้อ</td></tr>';
+        }
+        
+        echo $html . '</tbody></table>'; 
+        exit();
     }
 }
 ?>
