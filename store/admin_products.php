@@ -1,5 +1,5 @@
 <?php
-// --- Logic การบันทึกสินค้า (ห้ามยุ่งส่วนอื่นเด็ดขาด) ---
+// --- Logic การบันทึกสินค้า (คงเดิมไว้ทั้งหมด) ---
 if (isset($_POST['save_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
     $cat_id = $_POST['category_id'];
@@ -35,48 +35,64 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 ?>
 
 <style>
-    /* ดีไซน์ปุ่มและ Modal ธีมนีออน */
-    .btn-edit-neon { border: 1px solid #ffc107; color: #ffc107; background: transparent; transition: 0.3s; }
-    .btn-edit-neon:hover { background: #ffc107; color: #000; box-shadow: 0 0 10px #ffc107; }
+    /* ปรับแต่งความสว่างตัวหนังสือให้โดดเด่นบนพื้นหลังมืด */
+    .text-white-bright { color: #ffffff !important; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+    .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px rgba(0, 242, 254, 0.6); }
+    .text-neon-purple { color: #bb86fc !important; text-shadow: 0 0 10px rgba(187, 134, 252, 0.6); }
     
-    .btn-del-neon { border: 1px solid #ff4d4d; color: #ff4d4d; background: transparent; transition: 0.3s; }
-    .btn-del-neon:hover { background: #ff4d4d; color: #fff; box-shadow: 0 0 10px #ff4d4d; }
+    /* หัวตารางสีสว่าง */
+    .table thead th { color: #00f2fe !important; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid rgba(0, 242, 254, 0.3); }
+    .table tbody td { color: #ffffff !important; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    .btn-edit-neon { border: 1px solid #ffc107; color: #ffc107 !important; background: transparent; transition: 0.3s; }
+    .btn-edit-neon:hover { background: #ffc107; color: #000 !important; box-shadow: 0 0 10px #ffc107; }
     
-    .custom-confirm-modal .modal-content {
-        background: rgba(26, 0, 40, 0.95);
-        border: 2px solid #ff4d4d;
-        border-radius: 30px;
-        backdrop-filter: blur(10px);
-        color: #fff;
-    }
-    .text-white-bright { color: #ffffff !important; }
+    .btn-del-neon { border: 1px solid #ff4d4d; color: #ff4d4d !important; background: transparent; transition: 0.3s; }
+    .btn-del-neon:hover { background: #ff4d4d; color: #fff !important; box-shadow: 0 0 10px #ff4d4d; }
+
+    /* ปรับปรุง Input ให้ตัวหนังสือสีขาวชัดเจน */
+    .form-control, .form-select { background: rgba(255,255,255,0.1) !important; color: #ffffff !important; border: 1px solid rgba(187, 134, 252, 0.4) !important; }
+    .form-control::placeholder { color: rgba(255,255,255,0.4) !important; }
 </style>
 
 <div class="glass-panel">
     <div class="d-flex justify-content-between mb-4 align-items-center">
-        <h4 class="text-white-bright fw-bold"><i class="bi bi-box-seam me-2"></i> สินค้า & สต็อก</h4>
-        <button type="button" class="btn btn-neon-pink rounded-pill px-4 shadow-lg" data-bs-toggle="modal" data-bs-target="#pModalFull">
+        <h4 class="text-white-bright fw-bold mb-0"><i class="bi bi-box-seam me-2 text-neon-cyan"></i> สินค้า & สต็อก</h4>
+        <button type="button" class="btn btn-neon-pink rounded-pill px-4 shadow-lg fw-bold" data-bs-toggle="modal" data-bs-target="#pModalFull">
             <i class="bi bi-plus-circle me-2"></i>เพิ่มสินค้าใหม่
         </button>
     </div>
     
     <div class="table-responsive">
         <table class="table table-hover w-100">
-            <thead><tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก (รุ่นย่อย)</th><th class="text-center">จัดการ</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>รูป</th>
+                    <th>ชื่อสินค้า</th>
+                    <th>ราคา</th>
+                    <th>สต็อก (รุ่นย่อย)</th>
+                    <th class="text-center">จัดการ</th>
+                </tr>
+            </thead>
             <tbody>
                 <?php while($p = $products->fetch_assoc()): 
                     $v_q = $conn->query("SELECT * FROM product_variants WHERE product_id=".$p['id']);
                 ?>
                 <tr class="align-middle">
-                    <td><img src="images/<?= $p['image'] ?>" width="55" height="55" style="object-fit:cover; border-radius:12px; border: 2px solid rgba(0, 242, 254, 0.3);"></td>
-                    <td class="fw-bold text-white-bright fs-5"><?= htmlspecialchars($p['name']) ?></td>
-                    <td class="text-neon-cyan fw-bold">฿<?= number_format($p['price']) ?></td>
+                    <td>
+                        <img src="images/<?= $p['image'] ?>" width="60" height="60" style="object-fit:cover; border-radius:12px; border: 2px solid #00f2fe;">
+                    </td>
+                    <td>
+                        <span class="fw-bold text-white-bright fs-5 d-block"><?= htmlspecialchars($p['name']) ?></span>
+                        <small class="text-white-50">หมวดหมู่: <?= htmlspecialchars($p['cat_name']) ?></small>
+                    </td>
+                    <td class="text-neon-cyan fw-bold fs-5">฿<?= number_format($p['price']) ?></td>
                     <td>
                         <?php if($v_q->num_rows == 0): ?>
-                            <span class="badge bg-secondary px-3"><?= $p['stock'] ?> ชิ้น</span>
+                            <span class="badge bg-dark border border-secondary text-white-bright px-3"><?= $p['stock'] ?> ชิ้น</span>
                         <?php else: while($v = $v_q->fetch_assoc()): ?>
                             <div class="d-flex justify-content-between border-bottom border-white border-opacity-10 mb-1 pb-1">
-                                <span class="text-white-bright opacity-75 small"><?= $v['variant_name'] ?>:</span>
+                                <span class="text-white-bright opacity-90 small"><?= $v['variant_name'] ?>:</span>
                                 <span class="text-neon-cyan fw-bold ms-3"><?= $v['stock'] ?></span>
                             </div>
                         <?php endwhile; endif; ?>
@@ -102,10 +118,10 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
             <div class="modal-body">
                 <i class="bi bi-exclamation-triangle text-danger display-1 mb-4"></i>
                 <h3 class="fw-bold mb-3 text-white-bright">ยืนยันการลบสินค้า?</h3>
-                <p class="opacity-75 mb-4 px-3 text-white-bright">คุณแน่ใจหรือไม่ที่จะลบ <span id="delProdName" class="text-danger fw-bold"></span>?<br>ข้อมูลสต็อกและรุ่นย่อยทั้งหมดจะหายไปถาวร</p>
-                <div class="d-flex gap-2 justify-content-center">
+                <p class="text-white-bright opacity-90 mb-4 px-3 fs-5">คุณแน่ใจหรือไม่ที่จะลบ <span id="delProdName" class="text-danger fw-bold text-decoration-underline"></span>?<br>ข้อมูลสต็อกและรุ่นย่อยทั้งหมดจะหายไปถาวร</p>
+                <div class="d-flex gap-3 justify-content-center">
                     <button type="button" class="btn btn-outline-light px-4 rounded-pill" data-bs-dismiss="modal">ยกเลิก</button>
-                    <a href="#" id="finalDeleteBtn" class="btn btn-danger px-4 rounded-pill shadow">ยืนยันลบทันที</a>
+                    <a href="#" id="finalDeleteBtn" class="btn btn-danger px-4 rounded-pill shadow-lg fw-bold">ยืนยันลบทันที</a>
                 </div>
             </div>
         </div>
@@ -115,65 +131,41 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 <div class="modal fade" id="pModalFull" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form class="modal-content" style="background: #1a0028; border: 2px solid #bb86fc; color: #ffffff;" method="POST" enctype="multipart/form-data">
-            <div class="modal-header border-secondary">
-                <h4 class="text-neon-purple fw-bold mb-0">จัดการคลังสินค้า</h4>
+            <div class="modal-header border-secondary px-4">
+                <h4 class="text-neon-purple fw-bold mb-0"><i class="bi bi-pencil-square me-2"></i>รายละเอียดคลังสินค้า</h4>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body p-4 text-white-bright">
                 <div class="row g-3">
-                    <div class="col-md-6"><label class="small fw-bold mb-1 opacity-75">ชื่อสินค้า</label><input type="text" name="name" class="form-control text-white" required></div>
-                    <div class="col-md-3"><label class="small fw-bold mb-1 opacity-75">ประเภท</label>
-                        <select name="category_id" class="form-select text-white">
+                    <div class="col-md-6"><label class="small fw-bold mb-2 text-white-bright">ชื่อสินค้า</label><input type="text" name="name" class="form-control" placeholder="ระบุชื่อสินค้า..." required></div>
+                    <div class="col-md-3"><label class="small fw-bold mb-2 text-white-bright">ประเภท</label>
+                        <select name="category_id" class="form-select">
                             <?php $cl = $conn->query("SELECT * FROM categories"); while($c=$cl->fetch_assoc()) echo "<option value='{$c['id']}'>{$c['name']}</option>"; ?>
                         </select>
                     </div>
-                    <div class="col-md-3"><label class="small fw-bold mb-1 opacity-75">มีรุ่นย่อย?</label>
-                        <select name="is_variant" id="v_select_field" class="form-select text-white" onchange="toggleVariantDisplay(this.value)">
+                    <div class="col-md-3"><label class="small fw-bold mb-2 text-white-bright">มีรุ่นย่อย?</label>
+                        <select name="is_variant" id="v_select_field" class="form-select" onchange="toggleVariantDisplay(this.value)">
                             <option value="no">ไม่มี</option><option value="yes">มี</option>
                         </select>
                     </div>
                     <div id="no_variant_row" class="row g-3 px-0 mx-0 mt-2">
-                        <div class="col-md-6"><label class="small fw-bold mb-1">ราคาขาย</label><input type="number" name="price" class="form-control"></div>
-                        <div class="col-md-6"><label class="small fw-bold mb-1">จำนวนสต็อก</label><input type="number" name="stock" class="form-control"></div>
+                        <div class="col-md-6"><label class="small fw-bold mb-2 text-white-bright">ราคาขาย (฿)</label><input type="number" name="price" class="form-control" placeholder="0.00"></div>
+                        <div class="col-md-6"><label class="small fw-bold mb-2 text-white-bright">จำนวนสต็อก</label><input type="number" name="stock" class="form-control" placeholder="0"></div>
                     </div>
-                    <div class="col-12 mt-3"><label class="small fw-bold mb-1 opacity-75">รูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
+                    <div class="col-12 mt-3"><label class="small fw-bold mb-2 text-white-bright">อัปโหลดรูปภาพหลัก</label><input type="file" name="image" class="form-control"></div>
+                    
                     <div id="variant_section_box" style="display:none;" class="col-12 mt-4 pt-3 border-top border-secondary">
-                        <h6 class="text-neon-cyan fw-bold mb-3">รายการรุ่นย่อยและรูปภาพ</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-neon-cyan fw-bold mb-0">รายการรุ่นย่อยและรูปภาพ</h6>
+                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="addVariantRowAction()">+ เพิ่มแถว</button>
+                        </div>
                         <div id="variant_list_container"></div>
-                        <button type="button" class="btn btn-sm btn-outline-cyan rounded-pill mt-2" onclick="addVariantRowAction()">+ เพิ่มแถวรุ่นย่อย</button>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-secondary"><button type="submit" name="save_product" class="btn btn-neon-pink w-100 py-3 shadow-lg">บันทึกข้อมูล</button></div>
+            <div class="modal-footer border-secondary px-4 pb-4">
+                <button type="submit" name="save_product" class="btn btn-neon-pink w-100 py-3 shadow-lg fw-bold fs-5">บันทึกข้อมูลเข้าคลัง</button>
+            </div>
         </form>
     </div>
 </div>
-
-<script>
-    // ฟังก์ชันเปิดป๊อปอัพลบแบบใหม่
-    function askDelete(pid, pname) {
-        document.getElementById('delProdName').innerText = pname;
-        document.getElementById('finalDeleteBtn').href = 'admin_dashboard.php?tab=products&del_id=' + pid + '&type=product';
-        var myModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-        myModal.show();
-    }
-
-    function toggleVariantDisplay(val) {
-        document.getElementById('variant_section_box').style.display = (val === 'yes') ? 'block' : 'none';
-        document.getElementById('no_variant_row').style.display = (val === 'yes') ? 'none' : 'flex';
-    }
-
-    function addVariantRowAction() {
-        const container = document.getElementById('variant_list_container');
-        const div = document.createElement('div');
-        div.className = 'variant-card mb-3 p-3 border border-secondary border-opacity-25 rounded-4';
-        div.innerHTML = `<div class="row g-2 align-items-end">
-                <div class="col-md-3"><label class="small">ชื่อรุ่น</label><input type="text" name="v_names[]" class="form-control form-control-sm" required></div>
-                <div class="col-md-2"><label class="small">ราคา</label><input type="number" name="v_prices[]" class="form-control form-control-sm" required></div>
-                <div class="col-md-2"><label class="small">สต็อก</label><input type="number" name="v_stocks[]" class="form-control form-control-sm" value="0"></div>
-                <div class="col-md-4"><label class="small">รูปภาพ</label><input type="file" name="v_images[]" class="form-control form-control-sm"></div>
-                <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-danger border-0" onclick="this.closest('.variant-card').remove()"><i class="bi bi-trash-fill"></i></button></div>
-            </div>`;
-        container.appendChild(div);
-    }
-</script>
