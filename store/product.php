@@ -1,6 +1,7 @@
 <?php
 session_start();
 include "connectdb.php";
+
 $id = intval($_GET['id']);
 $product = $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc();
 
@@ -10,7 +11,7 @@ $product_images = $conn->query("
     WHERE product_id = $id
 ");
 
-// 2. ดึงข้อมูลตัวเลือกสินค้าแยกย่อย (เช่น เลือก 1 ใน 5 ตัวละคร)
+// 2. ดึงข้อมูลตัวเลือกสินค้าแยกย่อย (เพิ่มการดึงราคาและคำอธิบายเฉพาะรุ่น)
 $variants = $conn->query("SELECT * FROM product_variants WHERE product_id = $id");
 
 if(!$product){
@@ -36,7 +37,7 @@ if(isset($_SESSION['user_id'])){
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-/* --- ธีมหลัก Neon Mystery ห้ามลบ (คงเดิม 100%) --- */
+/* --- ธีมหลัก Neon Mystery คงเดิม 100% --- */
 body {
     background: radial-gradient(circle at 20% 30%, #4b2c63 0%, transparent 40%), 
                 radial-gradient(circle at 80% 70%, #6a1b9a 0%, transparent 40%), 
@@ -46,8 +47,8 @@ body {
 .navbar { background: rgba(26, 0, 40, 0.85); backdrop-filter: blur(15px); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(187, 134, 252, 0.2); }
 .product-card-panel { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 40px; }
 .product-title { font-weight: 700; font-size: 32px; color: #ffffff; text-shadow: 0 0 15px rgba(187, 134, 252, 0.5); }
-.product-price { color: #00f2fe !important; font-size: 30px; font-weight: 700; text-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
-.variant-option { display: inline-block; padding: 8px 18px; margin-right: 10px; margin-bottom: 10px; border: 1.5px solid rgba(187, 134, 252, 0.3); border-radius: 12px; cursor: pointer; transition: 0.3s; background: rgba(255, 255, 255, 0.05); color: white; }
+.product-price { color: #00f2fe !important; font-size: 35px; font-weight: 700; text-shadow: 0 0 10px rgba(0, 242, 254, 0.4); transition: 0.3s; }
+.variant-option { display: inline-block; padding: 10px 20px; margin-right: 10px; margin-bottom: 10px; border: 1.5px solid rgba(187, 134, 252, 0.3); border-radius: 12px; cursor: pointer; transition: 0.3s; background: rgba(255, 255, 255, 0.05); color: white; }
 .variant-option.active { border-color: #00f2fe; box-shadow: 0 0 15px rgba(0, 242, 254, 0.5); background: rgba(0, 242, 254, 0.15); font-weight: bold; }
 .qty-control { width: 140px; display: flex; align-items: center; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(187, 134, 252, 0.3); border-radius: 10px; overflow: hidden; }
 .qty-btn { background: transparent; border: none; color: white; width: 40px; height: 40px; }
@@ -58,8 +59,6 @@ body {
 .btn-neon-pink:hover { transform: translateY(-3px); box-shadow: 0 0 25px #f107a3; color: white; }
 .modern-btn { background: rgba(255,255,255,0.1); color:#fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px 18px; border-radius: 30px; text-decoration: none; transition: 0.3s; }
 .modern-btn:hover { background: #bb86fc; color:#120018; }
-.suggested-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px; transition: 0.3s; cursor: pointer; }
-.suggested-card:hover { transform: translateY(-8px); border-color: #bb86fc; box-shadow: 0 10px 20px rgba(187, 134, 252, 0.2); }
 .badge-cart { position: absolute; top: -5px; right: -5px; background: #f107a3; color: white; font-size: 11px; padding: 2px 6px; border-radius: 50%; border: 1px solid #1a0028; }
 .modal-content.custom-popup { background: rgba(26, 0, 40, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(187, 134, 252, 0.4); border-radius: 25px; color: #fff; }
 </style>
@@ -74,17 +73,11 @@ body {
             <input class="form-control me-2" style="background: rgba(255,255,255,0.1); border-radius: 20px; color:white; border:none; padding: 5px 15px;" type="search" name="search" placeholder="ค้นหาความลับ...">
             <button class="modern-btn"><i class="bi bi-search"></i></button>
         </form>
-
         <?php if(isset($_SESSION['user_id'])){ ?>
-            <a href="profile.php" class="modern-btn" title="บัญชีของฉัน">
-                <i class="bi bi-person-circle"></i>
-            </a>
-
+            <a href="profile.php" class="modern-btn"><i class="bi bi-person-circle"></i></a>
             <a href="cart.php" class="modern-btn position-relative">
                 <i class="bi bi-cart"></i>
-                <span id="cart-badge" class="badge-cart" style="<?= ($cart_count > 0) ? '' : 'display:none;' ?>">
-                    <?= $cart_count ?>
-                </span>
+                <span id="cart-badge" class="badge-cart" style="<?= ($cart_count > 0) ? '' : 'display:none;' ?>"><?= $cart_count ?></span>
             </a>
             <a href="logout.php" class="modern-btn">ออกจากระบบ</a>
         <?php } else { ?>
@@ -98,10 +91,10 @@ body {
     <div class="row g-5">
         <div class="col-md-5">
             <div class="text-center">
-                <img id="mainImage" src="images/<?= $product['image']; ?>" class="img-fluid mb-4 rounded-4 shadow-lg border border-secondary" style="max-height: 480px; object-fit: contain; background: rgba(0,0,0,0.2);" onerror="this.src='https://via.placeholder.com/480'">
+                <img id="mainImage" src="images/<?= $product['image']; ?>" class="img-fluid mb-4 rounded-4 shadow-lg border border-secondary" style="max-height: 500px; object-fit: contain; background: rgba(0,0,0,0.2);">
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
                     <?php if($product_images->num_rows > 0): ?>
-                        <?php $product_images->data_seek(0); while($img = $product_images->fetch_assoc()){ ?>
+                        <?php while($img = $product_images->fetch_assoc()){ ?>
                             <img src="images/<?= $img['image']; ?>" class="img-thumbnail border-secondary bg-dark" style="width: 80px; cursor: pointer;" onclick="document.getElementById('mainImage').src=this.src">
                         <?php } ?>
                     <?php endif; ?>
@@ -112,16 +105,22 @@ body {
         <div class="col-md-7">
             <div class="product-card-panel shadow-lg">
                 <h2 class="product-title mb-3"><?=$product['name']?></h2>
-                <div class="product-price mb-4">฿<?=number_format($product['price'])?></div>
-                <p style="line-height: 1.8; opacity: 0.9;"><?=$product['description']?></p>
+                <div id="dynamicPrice" class="product-price mb-4">฿<?=number_format($product['price'])?></div>
+                <p id="dynamicDesc" style="line-height: 1.8; opacity: 0.9;"><?=$product['description']?></p>
 
                 <?php if ($variants && $variants->num_rows > 0): ?>
                 <div class="mt-4 mb-4" id="variant-container">
-                    <label class="form-label small opacity-75 d-block mb-3">เลือกแบบที่คุณชอบ (รุ่นย่อย):</label>
+                    <label class="form-label small opacity-75 d-block mb-3">เลือกแบบที่คุณต้องการ (รุ่นย่อย):</label>
                     <div class="d-flex flex-wrap">
                         <?php while($v = $variants->fetch_assoc()): ?>
-                            <div class="variant-option" data-variant-id="<?= $v['id'] ?>" data-variant-name="<?= $v['variant_name'] ?>" data-image="images/<?= $v['variant_image'] ?>" onclick="selectVariant(this)">
-                                <?= $v['variant_name'] ?> (คงเหลือ <?= $v['stock'] ?>)
+                            <div class="variant-option" 
+                                 data-id="<?= $v['id'] ?>" 
+                                 data-name="<?= $v['variant_name'] ?>" 
+                                 data-price="<?= $v['price'] ?>" 
+                                 data-image="images/<?= $v['variant_image'] ?>" 
+                                 data-desc="<?= htmlspecialchars($v['variant_description']) ?>" 
+                                 onclick="selectVariant(this)">
+                                <?= $v['variant_name'] ?> (เหลือ <?= $v['stock'] ?>)
                             </div>
                         <?php endwhile; ?>
                     </div>
@@ -152,26 +151,6 @@ body {
             </div>
         </div>
     </div>
-
-    <div class="mt-5 pt-5">
-        <h3 class="mb-4 text-white"><i class="bi bi-stars text-warning me-2"></i>สินค้าที่คุณอาจสนใจ</h3>
-        <div class="row g-4">
-            <?php 
-            $related = $conn->query("SELECT * FROM products WHERE id != $id ORDER BY RAND() LIMIT 4");
-            while($rp = $related->fetch_assoc()):
-            ?>
-            <div class="col-6 col-md-3">
-                <div class="card suggested-card h-100 p-2 border-0" onclick="location.href='product.php?id=<?= $rp['id'] ?>'">
-                    <img src="images/<?= $rp['image'] ?>" class="card-img-top rounded-3" style="height: 180px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/180'">
-                    <div class="card-body p-2 text-center text-white">
-                        <h6 class="text-truncate"><?= $rp['name'] ?></h6>
-                        <p class="text-info fw-bold mb-0">฿<?= number_format($rp['price']) ?></p>
-                    </div>
-                </div>
-            </div>
-            <?php endwhile; ?>
-        </div>
-    </div>
 </div>
 
 <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
@@ -180,10 +159,8 @@ body {
             <div class="modal-body">
                 <i class="bi bi-magic mb-4" style="font-size: 4rem; color: #bb86fc; text-shadow: 0 0 20px #bb86fc;"></i>
                 <h3 class="fw-bold mb-3" style="color: #00f2fe;">สำเร็จแล้ว!</h3>
-                <p class="fs-5 opacity-75 mb-4">
-                    <span id="modal_variant_name" class="text-info"></span> จำนวน <span id="modal_qty" class="fw-bold text-white">1</span> ชิ้น ถูกเพิ่มแล้ว 🔮
-                </p>
-                <button type="button" class="btn px-5 py-2 rounded-pill text-white" style="background: linear-gradient(45deg, #7c3aed, #db2777); border:none;" data-bs-dismiss=\"modal\">ตกลง</button>
+                <p class="fs-5 opacity-75 mb-4"><span id="modal_variant_name"></span> ถูกเพิ่มลงตะกร้าแล้ว 🔮</p>
+                <button type="button" class="btn px-5 py-2 rounded-pill text-white" style="background: linear-gradient(45deg, #7c3aed, #db2777); border:none;" data-bs-dismiss="modal">ตกลง</button>
             </div>
         </div>
     </div>
@@ -191,16 +168,26 @@ body {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// ฟังก์ชันสลับข้อมูลตามรุ่นย่อยที่เลือก
 function selectVariant(el) {
     document.querySelectorAll('.variant-option').forEach(o => o.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('selected_variant_id').value = el.getAttribute('data-variant-id');
-    document.getElementById('selected_variant_name').value = el.getAttribute('data-variant-name');
     
-    // เปลี่ยนรูปภาพหลักตามรุ่นย่อยที่เลือก
-    const newImg = el.getAttribute('data-image');
-    if(newImg && newImg !== 'images/' && !newImg.includes('null')) { 
-        document.getElementById('mainImage').src = newImg; 
+    // ดึงค่าจาก data-attributes
+    const vid = el.getAttribute('data-id');
+    const vname = el.getAttribute('data-name');
+    const vprice = el.getAttribute('data-price');
+    const vimg = el.getAttribute('data-image');
+    const vdesc = el.getAttribute('data-desc');
+
+    // อัปเดตหน้าจอทันที
+    document.getElementById('selected_variant_id').value = vid;
+    document.getElementById('selected_variant_name').value = vname;
+    document.getElementById('dynamicPrice').innerText = '฿' + Number(vprice).toLocaleString();
+    document.getElementById('dynamicDesc').innerText = vdesc;
+    
+    if(vimg && !vimg.includes('undefined')) {
+        document.getElementById('mainImage').src = vimg;
     }
 }
 
@@ -212,14 +199,11 @@ function changeQty(amt) {
 
 function addToCart(pid) {
     let qty = document.getElementById('product_qty').value;
-    let vid_el = document.getElementById('selected_variant_id');
-    let vid = vid_el ? vid_el.value : 0; 
-    let vname_el = document.getElementById('selected_variant_name');
-    let vname = vname_el ? vname_el.value : "";
+    let vid = document.getElementById('selected_variant_id').value;
+    let vname = document.getElementById('selected_variant_name').value;
 
-    // แจ้งเตือนถ้าสินค้ามีรุ่นย่อยแต่ไม่ได้เลือก
     if(document.getElementById('variant-container') && vid === "") {
-        alert("กรุณาเลือกแบบ (รุ่นย่อย) ที่ต้องการก่อนครับ!");
+        alert("กรุณาเลือกแบบที่ต้องการก่อนครับ!");
         return;
     }
 
@@ -227,10 +211,9 @@ function addToCart(pid) {
     .then(r => r.json())
     .then(data => {
         if(data.status === 'success') {
-            const badge = document.getElementById('cart-badge');
-            if(badge) { badge.textContent = data.total; badge.style.display = 'block'; }
-            document.getElementById('modal_qty').textContent = qty;
-            document.getElementById('modal_variant_name').textContent = vname ? "(" + vname + ")" : "";
+            document.getElementById('cart-badge').textContent = data.total;
+            document.getElementById('cart-badge').style.display = 'block';
+            document.getElementById('modal_variant_name').textContent = vname ? vname : "สินค้า";
             new bootstrap.Modal(document.getElementById('cartModal')).show();
         } else { window.location.href = 'login.php'; }
     });
@@ -238,10 +221,9 @@ function addToCart(pid) {
 
 function buyNow(pid) {
     let qty = document.getElementById('product_qty').value;
-    let vid_el = document.getElementById('selected_variant_id');
-    let vid = vid_el ? vid_el.value : 0;
+    let vid = document.getElementById('selected_variant_id').value;
     if(document.getElementById('variant-container') && vid === "") {
-        alert("กรุณาเลือกแบบ (รุ่นย่อย) ที่ต้องการก่อนครับ!");
+        alert("กรุณาเลือกแบบที่ต้องการก่อนครับ!");
         return;
     }
     window.location.href = 'add_to_cart.php?id=' + pid + '&qty=' + qty + '&variant_id=' + vid + '&action=buy';
