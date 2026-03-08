@@ -2,7 +2,7 @@
 session_start();
 include "connectdb.php";
 
-/* ================= [ส่วนที่ปรับ]: แก้ไข SQL ให้สอดคล้องกับ Database ================= */
+/* ================= [ส่วนที่ปรับเพิ่ม]: แก้ไข SQL ให้สอดคล้องกับ Database ล่าสุด ================= */
 $category_slug = $_GET['category'] ?? "";
 $search = $_GET['search'] ?? "";
 $categories = $conn->query("SELECT * FROM categories ORDER BY name ASC");
@@ -117,7 +117,7 @@ body {
     <a class="navbar-brand fw-bold text-white" href="index.php">🎵 Goods Secret Store</a>
     <div class="ms-auto d-flex align-items-center gap-3">
         <form method="GET" class="d-flex d-none d-md-flex">
-            <input class="form-control me-2 search-input" type="search" name="search" placeholder="ค้นหาความสินค้า...">
+            <input class="form-control me-2 search-input" type="search" name="search" placeholder="ค้นหาความสินค้า..." value="<?= htmlspecialchars($search) ?>">
             <button class="modern-btn"><i class="bi bi-search"></i></button>
         </form>
         
