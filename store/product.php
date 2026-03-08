@@ -36,7 +36,7 @@ if(isset($_SESSION['user_id'])){
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-/* --- ธีมหลัก Neon Mystery ห้ามลบ --- */
+/* --- ธีมหลัก Neon Mystery ห้ามลบ (คงเดิม 100%) --- */
 body {
     background: radial-gradient(circle at 20% 30%, #4b2c63 0%, transparent 40%), 
                 radial-gradient(circle at 80% 70%, #6a1b9a 0%, transparent 40%), 
@@ -98,11 +98,13 @@ body {
     <div class="row g-5">
         <div class="col-md-5">
             <div class="text-center">
-                <img id="mainImage" src="images/<?= $product['image']; ?>" class="img-fluid mb-4 rounded-4 shadow-lg border border-secondary" style="max-height: 480px; object-fit: contain; background: rgba(0,0,0,0.2);">
+                <img id="mainImage" src="images/<?= $product['image']; ?>" class="img-fluid mb-4 rounded-4 shadow-lg border border-secondary" style="max-height: 480px; object-fit: contain; background: rgba(0,0,0,0.2);" onerror="this.src='https://via.placeholder.com/480'">
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
-                    <?php $product_images->data_seek(0); while($img = $product_images->fetch_assoc()){ ?>
-                        <img src="images/<?= $img['image']; ?>" class="img-thumbnail border-secondary bg-dark" style="width: 80px; cursor: pointer;" onclick="document.getElementById('mainImage').src=this.src">
-                    <?php } ?>
+                    <?php if($product_images->num_rows > 0): ?>
+                        <?php $product_images->data_seek(0); while($img = $product_images->fetch_assoc()){ ?>
+                            <img src="images/<?= $img['image']; ?>" class="img-thumbnail border-secondary bg-dark" style="width: 80px; cursor: pointer;" onclick="document.getElementById('mainImage').src=this.src">
+                        <?php } ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -115,11 +117,11 @@ body {
 
                 <?php if ($variants && $variants->num_rows > 0): ?>
                 <div class="mt-4 mb-4" id="variant-container">
-                    <label class="form-label small opacity-75 d-block mb-3">เลือกแบบที่คุณชอบ:</label>
+                    <label class="form-label small opacity-75 d-block mb-3">เลือกแบบที่คุณชอบ (รุ่นย่อย):</label>
                     <div class="d-flex flex-wrap">
                         <?php while($v = $variants->fetch_assoc()): ?>
                             <div class="variant-option" data-variant-id="<?= $v['id'] ?>" data-variant-name="<?= $v['variant_name'] ?>" data-image="images/<?= $v['variant_image'] ?>" onclick="selectVariant(this)">
-                                <?= $v['variant_name'] ?>
+                                <?= $v['variant_name'] ?> (คงเหลือ <?= $v['stock'] ?>)
                             </div>
                         <?php endwhile; ?>
                     </div>
@@ -160,7 +162,7 @@ body {
             ?>
             <div class="col-6 col-md-3">
                 <div class="card suggested-card h-100 p-2 border-0" onclick="location.href='product.php?id=<?= $rp['id'] ?>'">
-                    <img src="images/<?= $rp['image'] ?>" class="card-img-top rounded-3" style="height: 180px; object-fit: cover;">
+                    <img src="images/<?= $rp['image'] ?>" class="card-img-top rounded-3" style="height: 180px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/180'">
                     <div class="card-body p-2 text-center text-white">
                         <h6 class="text-truncate"><?= $rp['name'] ?></h6>
                         <p class="text-info fw-bold mb-0">฿<?= number_format($rp['price']) ?></p>
@@ -181,7 +183,7 @@ body {
                 <p class="fs-5 opacity-75 mb-4">
                     <span id="modal_variant_name" class="text-info"></span> จำนวน <span id="modal_qty" class="fw-bold text-white">1</span> ชิ้น ถูกเพิ่มแล้ว 🔮
                 </p>
-                <button type="button" class="btn px-5 py-2 rounded-pill text-white" style="background: linear-gradient(45deg, #7c3aed, #db2777); border:none;" data-bs-dismiss="modal">ตกลง</button>
+                <button type="button" class="btn px-5 py-2 rounded-pill text-white" style="background: linear-gradient(45deg, #7c3aed, #db2777); border:none;" data-bs-dismiss=\"modal\">ตกลง</button>
             </div>
         </div>
     </div>
@@ -194,8 +196,12 @@ function selectVariant(el) {
     el.classList.add('active');
     document.getElementById('selected_variant_id').value = el.getAttribute('data-variant-id');
     document.getElementById('selected_variant_name').value = el.getAttribute('data-variant-name');
+    
+    // เปลี่ยนรูปภาพหลักตามรุ่นย่อยที่เลือก
     const newImg = el.getAttribute('data-image');
-    if(newImg && newImg !== 'images/') { document.getElementById('mainImage').src = newImg; }
+    if(newImg && newImg !== 'images/' && !newImg.includes('null')) { 
+        document.getElementById('mainImage').src = newImg; 
+    }
 }
 
 function changeQty(amt) {
@@ -206,14 +212,14 @@ function changeQty(amt) {
 
 function addToCart(pid) {
     let qty = document.getElementById('product_qty').value;
-    // แก้บั๊กสินค้าปกติ: ตรวจสอบการมีอยู่ของช่องเลือกแบบ
     let vid_el = document.getElementById('selected_variant_id');
     let vid = vid_el ? vid_el.value : 0; 
     let vname_el = document.getElementById('selected_variant_name');
     let vname = vname_el ? vname_el.value : "";
 
+    // แจ้งเตือนถ้าสินค้ามีรุ่นย่อยแต่ไม่ได้เลือก
     if(document.getElementById('variant-container') && vid === "") {
-        alert("กรุณาเลือกแบบที่ต้องการก่อนครับ!");
+        alert("กรุณาเลือกแบบ (รุ่นย่อย) ที่ต้องการก่อนครับ!");
         return;
     }
 
@@ -235,7 +241,7 @@ function buyNow(pid) {
     let vid_el = document.getElementById('selected_variant_id');
     let vid = vid_el ? vid_el.value : 0;
     if(document.getElementById('variant-container') && vid === "") {
-        alert("กรุณาเลือกแบบที่ต้องการก่อนครับ!");
+        alert("กรุณาเลือกแบบ (รุ่นย่อย) ที่ต้องการก่อนครับ!");
         return;
     }
     window.location.href = 'add_to_cart.php?id=' + pid + '&qty=' + qty + '&variant_id=' + vid + '&action=buy';
