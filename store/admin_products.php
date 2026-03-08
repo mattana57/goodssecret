@@ -1,12 +1,11 @@
 <?php
-// --- [Logic 1]: ส่วนบันทึกและอัปเดตข้อมูล (คงเดิมแต่เพิ่มการรับค่า UPDATE) ---
+// --- [Logic 1]: ส่วนบันทึกและอัปเดตข้อมูล (คงเดิม) ---
 if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
     $cat_id = intval($_POST['category_id']);
     $desc = $conn->real_escape_string($_POST['description'] ?? '');
     $is_variant = $_POST['is_variant'];
     
-    // จัดการรูปภาพหลัก
     $img_name = $_POST['existing_image'] ?? "default.png";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = time() . "_" . basename($_FILES['image']['name']);
@@ -24,7 +23,6 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
         $p_id = $conn->insert_id;
     }
 
-    // จัดการรุ่นย่อย (Variants)
     if($is_variant == 'yes' && isset($_POST['v_names'])) {
         foreach($_POST['v_names'] as $i => $vname) {
             $v_id = $_POST['v_ids'][$i] ?? 'new';
@@ -48,11 +46,12 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     echo "<script>window.location='admin_dashboard.php?tab=products&success=1';</script>";
 }
 
-// --- [Logic 2]: ส่วน AJAX เพื่อดึงข้อมูล JSON มาใส่ในช่องแก้ไข (ห้ามลบ) ---
+// --- [Logic 2]: ส่วน AJAX เพื่อส่งข้อมูลไปที่หน้าแก้ไข (ห้ามลบ) ---
 if (isset($_GET['get_product_json'])) {
     $id = intval($_GET['get_product_json']);
     $p = $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc();
     $v = $conn->query("SELECT * FROM product_variants WHERE product_id=$id")->fetch_all(MYSQLI_ASSOC);
+    header('Content-Type: application/json');
     echo json_encode(['product' => $p, 'variants' => $v]);
     exit();
 }
@@ -61,7 +60,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 ?>
 
 <style>
-    /* สไตล์ความสว่างตัวหนังสือและนีออน */
+    /* สไตล์ความสว่างและธีมนีออนตามที่พี่ชอบ */
     .text-white-bright { color: #ffffff !important; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
     .btn-edit-neon { border: 1px solid #ffc107 !important; color: #ffc107 !important; background: transparent !important; }
@@ -106,7 +105,7 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
     </div>
 </div>
 
-<div class="modal fade" id="pModalFull" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="pModalFull" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <form class="modal-content shadow-lg" style="background: #1a0028; border: 2px solid #bb86fc; border-radius: 25px;" method="POST" enctype="multipart/form-data">
             <div class="modal-header border-secondary px-4">
@@ -150,11 +149,16 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 </div>
 
 <script>
-// --- [JavaScript]: ส่วนควบคุมปุ่มกด (ID และชื่อฟังก์ชันต้องห้ามแก้) ---
+// --- [JavaScript]: ต้องใช้ JQuery ในการควบคุม ---
 
 function toggleVariantDisplay(val) {
-    if (val === 'yes') { $('#variant_section_box').slideDown(); $('#no_variant_row').slideUp(); } 
-    else { $('#variant_section_box').slideUp(); $('#no_variant_row').slideDown(); }
+    if (val === 'yes') {
+        $('#variant_section_box').stop().slideDown(); 
+        $('#no_variant_row').stop().slideUp();       
+    } else {
+        $('#variant_section_box').stop().slideUp();   
+        $('#no_variant_row').stop().slideDown();     
+    }
 }
 
 function openAddModal() {
@@ -164,7 +168,7 @@ function openAddModal() {
     $('#form_p_id').val('');
     $('#variant_list_container').empty();
     toggleVariantDisplay('no');
-    // คำสั่งเปิด Modal
+    // ใช้คำสั่งตรงตัวของ Bootstrap เพื่อเปิด
     var myModal = new bootstrap.Modal(document.getElementById('pModalFull'));
     myModal.show();
 }
@@ -172,27 +176,34 @@ function openAddModal() {
 function openEditModal(pid) {
     $('#variant_list_container').empty();
     // ดึงข้อมูลผ่าน AJAX
-    $.getJSON('admin_products.php', { get_product_json: pid }, function(data) {
-        $('#modal_title').text('แก้ไขข้อมูลสินค้า');
-        $('#btn_submit_product').attr('name', 'update_product').text('อัปเดตข้อมูลสินค้า');
-        $('#form_p_id').val(data.product.id);
-        $('#form_name').val(data.product.name);
-        $('#form_cat').val(data.product.category_id);
-        $('#form_existing_image').val(data.product.image);
-        
-        if (data.variants.length > 0) {
-            $('#v_select_field').val('yes');
-            toggleVariantDisplay('yes');
-            data.variants.forEach(v => addVariantRowAction(v));
-        } else {
-            $('#v_select_field').val('no');
-            toggleVariantDisplay('no');
-            $('#form_price').val(data.product.price);
-            $('#form_stock').val(data.product.stock);
-        }
-        // คำสั่งเปิด Modal หลังดึงข้อมูลเสร็จ
-        var myModal = new bootstrap.Modal(document.getElementById('pModalFull'));
-        myModal.show();
+    $.ajax({
+        url: 'admin_products.php',
+        type: 'GET',
+        data: { get_product_json: pid },
+        dataType: 'json',
+        success: function(data) {
+            $('#modal_title').text('แก้ไขข้อมูลสินค้า');
+            $('#btn_submit_product').attr('name', 'update_product').text('อัปเดตข้อมูลสินค้า');
+            $('#form_p_id').val(data.product.id);
+            $('#form_name').val(data.product.name);
+            $('#form_cat').val(data.product.category_id);
+            $('#form_existing_image').val(data.product.image);
+            
+            if (data.variants.length > 0) {
+                $('#v_select_field').val('yes');
+                toggleVariantDisplay('yes');
+                data.variants.forEach(function(v) { addVariantRowAction(v); });
+            } else {
+                $('#v_select_field').val('no');
+                toggleVariantDisplay('no');
+                $('#form_price').val(data.product.price);
+                $('#form_stock').val(data.product.stock);
+            }
+            // เปิดหน้าต่างแก้ไข
+            var editModal = new bootstrap.Modal(document.getElementById('pModalFull'));
+            editModal.show();
+        },
+        error: function() { alert('ไม่สามารถดึงข้อมูลได้ กรุณาลองใหม่ครับ'); }
     });
 }
 
@@ -205,16 +216,16 @@ function addVariantRowAction(data = null) {
     const vimg_old = data ? data.variant_image : '';
 
     const html = `
-        <div class="variant-item-row bg-black bg-opacity-25 p-3 rounded-3 mb-3 border border-secondary">
+        <div class="variant-item-row bg-black bg-opacity-25 p-3 rounded-3 mb-3 border border-secondary shadow-sm">
             <input type="hidden" name="v_ids[]" value="${vid}">
             <input type="hidden" name="existing_v_images[]" value="${vimg_old}">
             <div class="row g-2">
-                <div class="col-md-4"><label class="small">ลาย/รุ่น</label><input type="text" name="v_names[]" class="form-control" value="${vname}" required></div>
-                <div class="col-md-2"><label class="small">ราคา</label><input type="number" name="v_prices[]" class="form-control" value="${vprice}" required></div>
+                <div class="col-md-4"><label class="small">ชื่อลาย/รุ่น</label><input type="text" name="v_names[]" class="form-control" value="${vname}" required></div>
+                <div class="col-md-3"><label class="small">ราคา</label><input type="number" name="v_prices[]" class="form-control" value="${vprice}" required></div>
                 <div class="col-md-2"><label class="small">สต็อก</label><input type="number" name="v_stocks[]" class="form-control" value="${vstock}" required></div>
-                <div class="col-md-4"><label class="small">รูป</label><input type="file" name="v_images[]" class="form-control"></div>
-                <div class="col-12 mt-2"><label class="small">รายละเอียด</label><textarea name="v_descriptions[]" class="form-control" rows="2">${vdesc}</textarea></div>
-                <div class="col-12 text-end"><button type="button" class="btn btn-xs btn-outline-danger mt-2" onclick="$(this).closest('.variant-item-row').remove()">ลบแถว</button></div>
+                <div class="col-md-3"><label class="small">รูป</label><input type="file" name="v_images[]" class="form-control"></div>
+                <div class="col-12 mt-2"><label class="small text-white-bright">รายละเอียด</label><textarea name="v_descriptions[]" class="form-control" rows="2">${vdesc}</textarea></div>
+                <div class="col-12 text-end mt-2"><button type="button" class="btn btn-xs btn-outline-danger" onclick="$(this).closest('.variant-item-row').remove()">ลบแถวนี้</button></div>
             </div>
         </div>`;
     $('#variant_list_container').append(html);
