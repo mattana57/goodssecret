@@ -1,5 +1,5 @@
 <?php
-// --- [Logic 1]: บันทึกสินค้าใหม่ / อัปเดตสินค้าเดิม ---
+// --- [Logic 1]: บันทึกสินค้าใหม่ / อัปเดตสินค้าเดิม (คงเดิม 100%) ---
 if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
     $cat_id = intval($_POST['category_id']);
@@ -17,16 +17,13 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     $st = ($is_variant == 'no') ? $_POST['stock'] : 0;
     
     if (isset($_POST['update_product'])) {
-        // กรณีแก้ไขสินค้า
         $p_id = intval($_POST['p_id']);
         $conn->query("UPDATE products SET name='$name', price='$pr', stock='$st', category_id='$cat_id', description='$desc', image='$img_name' WHERE id=$p_id");
     } else {
-        // กรณีเพิ่มสินค้าใหม่
         $conn->query("INSERT INTO products (name, price, stock, category_id, description, image) VALUES ('$name', '$pr', '$st', '$cat_id', '$desc', '$img_name')");
         $p_id = $conn->insert_id;
     }
 
-    // จัดการรุ่นย่อย (Variants) พร้อมรายละเอียด
     if($is_variant == 'yes' && isset($_POST['v_names'])) {
         foreach($_POST['v_names'] as $i => $vname) {
             $v_id = $_POST['v_ids'][$i] ?? 'new';
@@ -51,11 +48,12 @@ if (isset($_POST['save_product']) || isset($_POST['update_product'])) {
     echo "<script>window.location='admin_dashboard.php?tab=products&success=1';</script>";
 }
 
-// --- [Logic 2]: ดึงข้อมูล JSON สำหรับปุ่มแก้ไข (AJAX) ---
+// --- [Logic 2]: ส่วน AJAX เพื่อดึงข้อมูล JSON สำหรับปุ่มแก้ไข (จุดสำคัญที่ทำให้ปุ่มเด้ง) ---
 if (isset($_GET['get_product_json'])) {
     $id = intval($_GET['get_product_json']);
     $p = $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc();
     $v = $conn->query("SELECT * FROM product_variants WHERE product_id=$id")->fetch_all(MYSQLI_ASSOC);
+    header('Content-Type: application/json');
     echo json_encode(['product' => $p, 'variants' => $v]);
     exit();
 }
@@ -64,21 +62,16 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 ?>
 
 <style>
-    /* ปรับแต่งความสว่างและธีมนีออน */
+    /* สไตล์ความสว่างและธีมนีออน */
     .text-white-bright { color: #ffffff !important; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px rgba(0, 242, 254, 0.6); }
     .text-neon-purple { color: #bb86fc !important; text-shadow: 0 0 10px rgba(187, 134, 252, 0.6); }
-    
     .table thead th { color: #00f2fe !important; font-weight: bold; border-bottom: 2px solid rgba(0, 242, 254, 0.3); }
     .table tbody td { color: #ffffff !important; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-    /* ปุ่มแก้ไขสีเหลืองเรืองแสง */
     .btn-edit-neon { border: 1px solid #ffc107; color: #ffc107 !important; background: transparent; transition: 0.3s; }
     .btn-edit-neon:hover { background: #ffc107; color: #000 !important; box-shadow: 0 0 15px #ffc107; }
-    
     .btn-del-neon { border: 1px solid #ff4d4d; color: #ff4d4d !important; background: transparent; transition: 0.3s; }
     .btn-del-neon:hover { background: #ff4d4d; color: #fff !important; box-shadow: 0 0 15px #ff4d4d; }
-
     .form-control, .form-select { background: rgba(255,255,255,0.1) !important; color: #ffffff !important; border: 1px solid rgba(187, 134, 252, 0.4) !important; }
 </style>
 
@@ -207,11 +200,11 @@ $products = $conn->query("SELECT p.*, c.name as cat_name FROM products p LEFT JO
 
 function toggleVariantDisplay(val) {
     if (val === 'yes') {
-        $('#variant_section_box').slideDown(); 
-        $('#no_variant_row').slideUp();       
+        $('#variant_section_box').stop().slideDown(); 
+        $('#no_variant_row').stop().slideUp();       
     } else {
-        $('#variant_section_box').slideUp();   
-        $('#no_variant_row').slideDown();     
+        $('#variant_section_box').stop().slideUp();   
+        $('#no_variant_row').stop().slideDown();     
     }
 }
 
@@ -266,31 +259,40 @@ function openAddModal() {
     new bootstrap.Modal(document.getElementById('pModalFull')).show();
 }
 
+// [ฟังก์ชันหัวใจสำคัญ]: ดึงข้อมูลสินค้ามาแสดงในหน้าแก้ไข
 function openEditModal(pid) {
-    $('#modal_title').text('แก้ไขข้อมูลสินค้า');
-    $('#btn_submit_product').attr('name', 'update_product').text('อัปเดตข้อมูลสินค้า');
     $('#variant_list_container').empty();
-
-    // แก้ไขจุดนี้: ระบุไฟล์ admin_products.php โดยตรงเพื่อให้ AJAX ทำงานได้แม้รันผ่านหน้าอื่น
-    $.getJSON('admin_products.php', { get_product_json: pid }, function(data) {
-        $('#form_p_id').val(data.product.id);
-        $('#form_name').val(data.product.name);
-        $('#form_cat').val(data.product.category_id);
-        $('#form_existing_image').val(data.product.image);
-        
-        if (data.variants.length > 0) {
-            $('#v_select_field').val('yes');
-            toggleVariantDisplay('yes');
-            data.variants.forEach(v => addVariantRowAction(v));
-        } else {
-            $('#v_select_field').val('no');
-            toggleVariantDisplay('no');
-            $('#form_price').val(data.product.price);
-            $('#form_stock').val(data.product.stock);
+    // ระบุ URL ไปที่ admin_products.php โดยตรงเพื่อเลี่ยงปัญหา AJAX ไม่ทำงานเวลาเปิดผ่าน dashboard
+    $.ajax({
+        url: 'admin_products.php',
+        type: 'GET',
+        data: { get_product_json: pid },
+        dataType: 'json',
+        success: function(data) {
+            $('#modal_title').text('แก้ไขข้อมูลสินค้า');
+            $('#btn_submit_product').attr('name', 'update_product').text('อัปเดตข้อมูลสินค้า');
+            $('#form_p_id').val(data.product.id);
+            $('#form_name').val(data.product.name);
+            $('#form_cat').val(data.product.category_id);
+            $('#form_existing_image').val(data.product.image);
+            
+            if (data.variants.length > 0) {
+                $('#v_select_field').val('yes');
+                toggleVariantDisplay('yes');
+                data.variants.forEach(function(v) { addVariantRowAction(v); });
+            } else {
+                $('#v_select_field').val('no');
+                toggleVariantDisplay('no');
+                $('#form_price').val(data.product.price);
+                $('#form_stock').val(data.product.stock);
+            }
+            // คำสั่งเปิด Modal
+            var editModal = new bootstrap.Modal(document.getElementById('pModalFull'));
+            editModal.show();
+        },
+        error: function() { 
+            alert('ไม่สามารถดึงข้อมูลได้ กรุณาลองใหม่ครับ'); 
         }
-        new bootstrap.Modal(document.getElementById('pModalFull')).show();
-    }).fail(function() {
-        alert("ไม่สามารถดึงข้อมูลได้");
     });
 }
 
