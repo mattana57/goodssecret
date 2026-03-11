@@ -91,7 +91,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 
 <div class="admin-card-panel mt-2">
     <div class="d-flex justify-content-between mb-4 align-items-center flex-wrap gap-4">
-        <h4 class="mb-0 text-white fw-bold"><i class="bi bi-tags-fill me-2 text-neon-cyan"></i> จัดการประเภทสินค้า</h4>
+        <h4 class="mb-0 text-white fw-bold"><i class="bi bi-tags-fill me-2 text-neon-cyan"></i> จัดการประเภทสินค้า </h4>
         
         <form method="POST" class="d-flex gap-2">
             <input type="text" name="cat_name" class="form-control rounded-pill px-4 bg-dark text-white border-secondary" placeholder="ชื่อประเภทใหม่" style="min-width: 250px;" required>

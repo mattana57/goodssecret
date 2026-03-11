@@ -1,5 +1,4 @@
 <?php
-// --- [ส่วนที่ 1: Logic สำหรับอัปเดตข้อมูลลูกค้า] ---
 if (isset($_POST['update_user'])) {
     $uid = intval($_POST['user_id']);
     $full = $conn->real_escape_string($_POST['fullname']);
@@ -9,14 +8,12 @@ if (isset($_POST['update_user'])) {
     echo "<script>window.location='admin_dashboard.php?tab=customers&updated=1';</script>";
 }
 
-// ดึงข้อมูลลูกค้าเฉพาะบทบาท user มาแสดงผล
 $users = $conn->query("SELECT * FROM users WHERE role='user' ORDER BY id DESC");
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    /* สไตล์ปุ่มแก้ไขสีเหลืองนีออนที่กูเพิ่มให้ใหม่ */
     .btn-edit-neon {
         background: transparent !important;
         border: 1px solid #ffc107 !important;
@@ -113,7 +110,6 @@ $users = $conn->query("SELECT * FROM users WHERE role='user' ORDER BY id DESC");
 </div>
 
 <script>
-    // ฟังก์ชันเปิด Modal พร้อมใส่ข้อมูลลูกค้าเดิมลงในช่องกรอก
     function editUser(id, fullname, phone) {
         document.getElementById('edit_user_id').value = id;
         document.getElementById('edit_fullname').value = fullname;
