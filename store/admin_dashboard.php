@@ -6,19 +6,15 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.php"); exit();
 }
 
-// --- [จุดที่เพิ่ม]: Logic การลบข้อมูล (Delete) เพื่อให้ปุ่มลบใช้งานได้จริง ---
 if (isset($_GET['del_id']) && isset($_GET['type'])) {
     $id = intval($_GET['del_id']);
     $type = $_GET['type'];
     
     if ($type == 'product') {
-        // ลบรุ่นย่อยออกก่อนเพื่อไม่ให้ติด Foreign Key
         $conn->query("DELETE FROM product_variants WHERE product_id=$id");
-        // แล้วค่อยลบสินค้าหลัก
         $conn->query("DELETE FROM products WHERE id=$id");
     }
     elseif ($type == 'category') {
-        // ตรวจสอบก่อนว่ามีสินค้าใช้งานประเภทนี้อยู่ไหม กันระบบพัง
         $check = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
         if ($check->num_rows > 0) {
             echo "<script>alert('ไม่สามารถลบได้! เนื่องจากยังมีสินค้าที่ใช้งานประเภทนี้อยู่'); window.location='admin_dashboard.php?tab=categories';</script>";
@@ -26,9 +22,7 @@ if (isset($_GET['del_id']) && isset($_GET['type'])) {
         }
         $conn->query("DELETE FROM categories WHERE id=$id");
     }
-    // [กูเพิ่มส่วนนี้ให้]: สำหรับลบข้อมูลลูกค้าใน Database
     elseif ($type == 'customer') {
-        // ระบบป้องกัน: ห้ามลบแอดมินที่กำลัง Login อยู่ในขณะนั้น
         if ($id == $_SESSION['user_id']) {
             echo "<script>alert('ไม่สามารถลบตัวเองได้!'); window.location='admin_dashboard.php?tab=customers';</script>";
             exit();
@@ -42,7 +36,6 @@ if (isset($_GET['del_id']) && isset($_GET['type'])) {
 
 $tab = isset($_GET['tab']) ? $_GET['tab'] : 'products';
 
-// --- ส่วน AJAX สำหรับดึงประวัติลูกค้าและอัปเดตสต็อกด่วน (คงเดิมทุกตัวอักษร) ---
 if (isset($_GET['ajax_action'])) {
     if ($_GET['ajax_action'] == 'update_stock_direct') {
         $pid = intval($_GET['pid']); $val = intval($_GET['val']);

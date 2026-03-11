@@ -9,7 +9,6 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// --- ระบบจัดการจำนวนสินค้า (บวกลบ) คงเดิม ---
 if (isset($_GET['action']) && isset($_GET['product_id'])) {
     $p_id = intval($_GET['product_id']);
     $v_id = isset($_GET['variant_id']) ? intval($_GET['variant_id']) : 0;
@@ -23,7 +22,6 @@ if (isset($_GET['action']) && isset($_GET['product_id'])) {
     exit();
 }
 
-// --- ฟังก์ชันลบสินค้า คงเดิม ---
 if (isset($_GET['delete_id'])) {
     $del_id = intval($_GET['delete_id']);
     $v_id = isset($_GET['variant_id']) ? intval($_GET['variant_id']) : 0;
@@ -32,7 +30,6 @@ if (isset($_GET['delete_id'])) {
     exit();
 }
 
-// [จุดแก้ไขสำคัญ]: ปรับ Query ให้ดึงราคาและรูปภาพจากรุ่นย่อย (Variant) มาแสดงแทนค่าว่าง
 $sql = "SELECT cart.*, products.name, products.image as p_img, pv.variant_name, pv.variant_image 
         FROM cart 
         JOIN products ON cart.product_id = products.id 
@@ -49,7 +46,6 @@ $result = $conn->query($sql);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
-        /* โค้ด CSS เดิมของมึงเป๊ะๆ ไม่หายแน่นอน */
         body { background-color: #0f172a; color: #ffffff !important; background-image: radial-gradient(circle at top right, #3d1263, transparent), radial-gradient(circle at bottom left, #1e1b4b, transparent); min-height: 100vh; }
         h2, h4, h5 { color: #ffffff !important; font-weight: 700; text-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
         .table { color: #ffffff !important; --bs-table-bg: transparent !important; background-color: transparent !important; }
@@ -62,7 +58,6 @@ $result = $conn->query($sql);
         .qty-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(187,134,252,0.3); border-radius: 8px; min-width: 40px; display: inline-block; }
         .modal-content.delete-popup { background: rgba(40, 0, 10, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 25px; color: #fff; }
         
-        /* สไตล์เพิ่มเติมสำหรับปุ่มกลับ */
         .btn-continue { 
             background: rgba(255, 255, 255, 0.05); 
             border: 1px solid rgba(187, 134, 252, 0.3); 

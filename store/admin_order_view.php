@@ -14,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_status'])) {
     
     $cancel_sql = "";
     if($new_status === 'cancelled') {
-        // [จุดที่แก้]: ต้องระบุชัดเจนว่าเป็น admin เท่านั้นที่กดยกเลิกจากหน้านี้
         $cancel_sql = ", cancel_by = 'admin', cancel_reason = '$cancel_reason'";
     } else {
         $cancel_sql = ", cancel_reason = ''";
@@ -57,10 +56,9 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         .product-img-td { width: 65px; height: 65px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
         .alert-neon-danger { background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 15px; }
 
-        /* [ปรับเพิ่ม]: สไตล์ป๊อปอัพให้เนียนกริบกับธีมม่วงนีออน */
         .swal2-popup {
-            background: #1a0028 !important; /* พื้นหลังม่วงเข้มมืด */
-            border: 2px solid #bb86fc !important; /* ขอบนีออนม่วงสว่าง */
+            background: #1a0028 !important; 
+            border: 2px solid #bb86fc !important; 
             border-radius: 30px !important;
             box-shadow: 0 0 30px rgba(187, 134, 252, 0.3) !important;
         }
@@ -73,16 +71,15 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         }
         .swal2-input:focus { border-color: #00f2fe !important; box-shadow: 0 0 10px rgba(0, 242, 254, 0.3) !important; }
         
-        /* สไตล์ปุ่มในป๊อปอัพ */
         .custom-swal-confirm {
-            background: #2582d1 !important; /* สีฟ้าตามรูปต้นฉบับของมึง */
+            background: #2582d1 !important; 
             color: #fff !important;
             border-radius: 8px !important;
             padding: 10px 25px !important;
             font-weight: bold !important;
         }
         .custom-swal-cancel {
-            background: #6e7881 !important; /* สีเทาตามรูปต้นฉบับของมึง */
+            background: #6e7881 !important; 
             color: #fff !important;
             border-radius: 8px !important;
             padding: 10px 25px !important;
@@ -159,7 +156,6 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    /* [ปรับแต่ง]: ป๊อปอัพยืนยันทั่วไปให้เข้าธีม */
     function updateStatus(newStatus) {
         Swal.fire({
             title: 'ยืนยันการเปลี่ยนสถานะ?',
@@ -183,7 +179,6 @@ $items_q = $conn->query("SELECT od.*, p.name, p.image, pv.variant_name, pv.varia
         });
     }
 
-    /* [ปรับแต่ง]: ป๊อปอัพยกเลิกพร้อมช่องกรอกเหตุผลให้สวยงามตามรูป */
     function cancelByAdmin() {
         Swal.fire({
             title: 'ยกเลิกคำสั่งซื้อ',

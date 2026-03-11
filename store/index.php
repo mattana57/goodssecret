@@ -2,12 +2,10 @@
 session_start();
 include "connectdb.php";
 
-/* ================= [ส่วนที่ปรับเพิ่ม]: แก้ไข SQL ให้ดึงราคาและสต็อกจากรุ่นย่อย ================= */
 $category_slug = $_GET['category'] ?? "";
 $search = $_GET['search'] ?? ""; 
 $categories = $conn->query("SELECT * FROM categories ORDER BY name ASC");
 
-// ปรับ SQL ให้ดึงราคาต่ำสุด (min_v_price) และสต็อกรวม (total_v_stock) จากรุ่นย่อย
 $sql = "SELECT products.*, categories.name as category_name, categories.slug,
         (SELECT MIN(price) FROM product_variants WHERE product_id = products.id) as min_v_price,
         (SELECT SUM(stock) FROM product_variants WHERE product_id = products.id) as total_v_stock
@@ -19,7 +17,6 @@ if($search){ $sql .= " AND products.name LIKE '%".$conn->real_escape_string($sea
 $showLanding = (!$category_slug && !$search);
 if(!$showLanding){ $products = $conn->query($sql); }
 
-// ดึงสินค้าแนะนำและมาใหม่ โดยดึงราคาต่ำสุดมาด้วย
 $recommended = $conn->query("SELECT p.*, (SELECT MIN(price) FROM product_variants WHERE product_id = p.id) as min_v_price FROM products p WHERE p.is_hot=1 LIMIT 8");
 $newArrival = $conn->query("SELECT p.*, (SELECT MIN(price) FROM product_variants WHERE product_id = p.id) as min_v_price FROM products p WHERE p.is_hot=0 ORDER BY p.id DESC LIMIT 8");
 
@@ -40,7 +37,6 @@ if(isset($_SESSION['user_id'])){
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        /* --- [คงเดิม] สไตล์หลักของเว็บไซต์ --- */
         body {
             background: radial-gradient(circle at 20% 30%, #4b2c63 0%, transparent 40%), 
                         radial-gradient(circle at 80% 70%, #6a1b9a 0%, transparent 40%), 
@@ -216,24 +212,21 @@ if(isset($_SESSION['user_id'])){
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    /* --- [คงเดิม] ฟังก์ชันตระกร้าสินค้า --- */
     function addToCart(productId) {
         fetch('add_to_cart.php?id=' + productId + '&ajax=1')
         .then(response => response.json())
         .then(data => {
             if(data.status === 'success') {
-                location.reload(); // โหลดหน้าใหม่เพื่ออัปเดต Badge
+                location.reload(); 
             } else { window.location.href = 'login.php'; }
         });
     }
 
-    /* --- [ส่วนที่เพิ่มใหม่] ฟังก์ชันเปิด/ปิดเมนูติดต่อ --- */
     function toggleContactMenu() {
         const menu = document.getElementById('contactMenu');
         menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
     }
 
-    // ปิดเมนูเมื่อคลิกนอกปุ่ม
     window.onclick = function(event) {
         if (!event.target.closest('.admin-contact-float')) {
             document.getElementById('contactMenu').style.display = 'none';

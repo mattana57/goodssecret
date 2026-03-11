@@ -11,7 +11,6 @@ $user_id = $_SESSION['user_id'];
 $update_success = false;
 $order_complete = isset($_GET['order_complete']);
 
-// --- ระบบบันทึกการแก้ไขโปรไฟล์ (คงเดิมไว้ทั้งหมด) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_profile'])) {
     $fullname = $conn->real_escape_string($_POST['fullname']);
     $email = $conn->real_escape_string($_POST['email']);
@@ -53,7 +52,6 @@ $orders = $conn->query("SELECT * FROM orders WHERE user_id = $user_id ORDER BY c
         .custom-input { background: rgba(20, 0, 40, 0.6) !important; border: 1px solid rgba(187, 134, 252, 0.3) !important; color: #fff !important; border-radius: 12px !important; }
         .btn-neon-pink { background: linear-gradient(135deg, #f107a3, #bb86fc); color: #fff; border: none; font-weight: bold; border-radius: 12px; padding: 12px; transition: 0.3s; }
         
-        /* --- [ปรับ]: แก้ไขตารางให้โปร่งแสงและลบสีขาวออก --- */
         .table { color: #fff !important; background: transparent !important; }
         .table thead th { background: rgba(187, 134, 252, 0.1) !important; color: #bb86fc !important; border: none !important; padding: 15px; }
         .table tbody td { background: transparent !important; border-bottom: 1px solid rgba(187, 134, 252, 0.1) !important; color: #fff !important; padding: 15px; }

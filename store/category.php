@@ -6,13 +6,11 @@ include "navbar.php";
 $slug = $_GET['slug'] ?? "";
 $search = $_GET['search'] ?? "";
 
-/* GET CATEGORY INFO */
 $catQuery = $conn->prepare("SELECT * FROM categories WHERE slug=?");
 $catQuery->bind_param("s",$slug);
 $catQuery->execute();
 $category = $catQuery->get_result()->fetch_assoc();
 
-/* GET PRODUCTS */
 $sql = "
 SELECT products.* FROM products
 LEFT JOIN categories ON products.category_id = categories.id

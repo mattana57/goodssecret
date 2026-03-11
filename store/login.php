@@ -9,7 +9,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // [แก้ไข]: เพิ่มการดึงฟิลด์ role มาจากตาราง users
     $stmt = $conn->prepare("SELECT id, password, role FROM users WHERE username=?");
     $stmt->bind_param("s",$username);
     $stmt->execute();
@@ -21,9 +20,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         if(password_verify($password, $user['password'])){
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $username;
-            $_SESSION['role'] = $user['role']; // เก็บสิทธิ์ไว้เช็คใน Navbar และ Dashboard
+                        $_SESSION['role'] = $user['role'];
 
-            // [เพิ่ม]: แยกทางไป ถ้าเป็น admin ให้ไปหลังบ้าน ถ้าเป็น user ไปหน้าแรก
             if($user['role'] == 'admin'){
                 header("Location: admin_dashboard.php");
             } else {
@@ -50,7 +48,6 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
-/* --- โค้ด CSS เดิมของพี่ทั้งหมด ห้ามเปลี่ยน --- */
 body{
 background: linear-gradient(135deg,#2a0845,#6a1b9a,#3d1e6d);
 height:100vh;
@@ -168,7 +165,7 @@ background:#d39ddb;
 </div>
 
 <script>
-/* --- โค้ด JavaScript เดิมของพี่ --- */
+/*  */
 document.querySelectorAll(".toggle-password").forEach(icon=>{
     icon.addEventListener("click", function(){
         let input = document.getElementById(this.dataset.target);

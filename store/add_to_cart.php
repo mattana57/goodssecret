@@ -14,7 +14,6 @@ $variant_id = isset($_GET['variant_id']) && $_GET['variant_id'] != "" ? intval($
 $action = $_GET['action'] ?? '';
 
 if($product_id > 0 && $qty > 0){
-    // [จุดแก้ไขสำคัญ]: ดึงราคาให้ถูกต้องตามรุ่นที่มึงเลือกมาเก็บลงตะกร้า
     if ($variant_id > 0) {
         $res = $conn->query("SELECT price FROM product_variants WHERE id = $variant_id");
         $v_data = $res->fetch_assoc();
@@ -30,7 +29,6 @@ if($product_id > 0 && $qty > 0){
     if($check->num_rows > 0){
         $conn->query("UPDATE cart SET quantity = quantity + $qty WHERE user_id = $user_id AND product_id = $product_id AND variant_id = $variant_id");
     } else {
-        // [จุดแก้ไขสำคัญ]: มึงต้อง INSERT ราคาลงไปในตาราง cart ด้วย ราคามันถึงจะไม่เป็น 0
         $conn->query("INSERT INTO cart (user_id, product_id, quantity, variant_id, price) VALUES ($user_id, $product_id, $qty, $variant_id, $price)");
     }
 }

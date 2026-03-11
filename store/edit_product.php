@@ -6,19 +6,17 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.php"); exit();
 }
 
-// ตรวจสอบว่าเป็นโหมด แก้ไข หรือ เพิ่มใหม่ (รองรับทั้งคู่ในไฟล์เดียว)
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $is_edit = ($id > 0);
 
 if (isset($_POST['save_product'])) {
     $name = mysqli_real_escape_string($conn, $_POST['name']);
     $desc = mysqli_real_escape_string($conn, $_POST['description']);
-    $cat_id = intval($_POST['category_id']); // [เพิ่ม]: รับค่าประเภทสินค้า
+    $cat_id = intval($_POST['category_id']); 
     $has_variants = isset($_POST['has_variants']) ? 1 : 0;
     $is_hot = isset($_POST['is_hot']) ? 1 : 0;
     $is_trending = isset($_POST['is_trending']) ? 1 : 0;
 
-    // จัดการรูปหลักสินค้า
     $new_image_name = "";
     if (!empty($_FILES['image']['name'])) {
         $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
@@ -27,13 +25,11 @@ if (isset($_POST['save_product'])) {
     }
 
     if ($is_edit) {
-        // โหมดแก้ไข: อัปเดตข้อมูลรวมถึง category_id
         $img_sql = $new_image_name ? ", image = '$new_image_name'" : "";
         $main_price = !$has_variants ? floatval($_POST['main_price']) : 0;
         $main_stock = !$has_variants ? intval($_POST['main_stock']) : 0;
         $conn->query("UPDATE products SET name='$name', description='$desc', category_id=$cat_id, price=$main_price, stock=$main_stock, is_hot=$is_hot, is_trending=$is_trending $img_sql WHERE id=$id");
     } else {
-        // โหมดเพิ่มใหม่: ใส่ category_id ลงในตาราง
         $img_val = $new_image_name ? $new_image_name : "default.png";
         $main_price = !$has_variants ? floatval($_POST['main_price']) : 0;
         $main_stock = !$has_variants ? intval($_POST['main_stock']) : 0;
@@ -41,7 +37,6 @@ if (isset($_POST['save_product'])) {
         $id = $conn->insert_id;
     }
 
-    // จัดการรุ่นย่อย (Variants)
     if ($has_variants && isset($_POST['v_name'])) {
         $conn->query("DELETE FROM product_variants WHERE product_id = $id");
         foreach ($_POST['v_name'] as $key => $v_name) {
@@ -61,11 +56,9 @@ if (isset($_POST['save_product'])) {
     header("Location: admin_dashboard.php?tab=products"); exit();
 }
 
-// ดึงข้อมูลกรณีแก้ไข
 $p = $is_edit ? $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc() : ['name'=>'','description'=>'','category_id'=>'','image'=>'','price'=>0,'stock'=>0,'is_hot'=>0,'is_trending'=>0];
 $variants = $is_edit ? $conn->query("SELECT * FROM product_variants WHERE product_id=$id") : null;
 
-// [เพิ่ม]: ดึงประเภทสินค้าทั้งหมดจาก Database
 $categories_res = $conn->query("SELECT * FROM categories ORDER BY name ASC");
 ?>
 

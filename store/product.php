@@ -5,13 +5,11 @@ include "connectdb.php";
 $id = intval($_GET['id']);
 $product = $conn->query("SELECT * FROM products WHERE id=$id")->fetch_assoc();
 
-// 1. ดึงรูปภาพแกลเลอรี่ประกอบ
 $product_images = $conn->query("
     SELECT * FROM product_images 
     WHERE product_id = $id
 ");
 
-// 2. ดึงข้อมูลตัวเลือกสินค้าแยกย่อย (เพิ่มการดึงราคาและคำอธิบายเฉพาะรุ่น)
 $variants = $conn->query("SELECT * FROM product_variants WHERE product_id = $id");
 
 if(!$product){
@@ -37,7 +35,6 @@ if(isset($_SESSION['user_id'])){
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-/* --- ธีมหลัก Neon Mystery คงเดิม 100% --- */
 body {
     background: radial-gradient(circle at 20% 30%, #4b2c63 0%, transparent 40%), 
                 radial-gradient(circle at 80% 70%, #6a1b9a 0%, transparent 40%), 
@@ -168,19 +165,16 @@ body {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ฟังก์ชันสลับข้อมูลตามรุ่นย่อยที่เลือก
 function selectVariant(el) {
     document.querySelectorAll('.variant-option').forEach(o => o.classList.remove('active'));
     el.classList.add('active');
     
-    // ดึงค่าจาก data-attributes
     const vid = el.getAttribute('data-id');
     const vname = el.getAttribute('data-name');
     const vprice = el.getAttribute('data-price');
     const vimg = el.getAttribute('data-image');
     const vdesc = el.getAttribute('data-desc');
 
-    // อัปเดตหน้าจอทันที
     document.getElementById('selected_variant_id').value = vid;
     document.getElementById('selected_variant_name').value = vname;
     document.getElementById('dynamicPrice').innerText = '฿' + Number(vprice).toLocaleString();

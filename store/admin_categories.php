@@ -1,29 +1,23 @@
 <?php
-// --- [ส่วนที่ 1: Logic สำหรับลบประเภทสินค้า]: ห้ามตัดออกเด็ดขาด ---
 if (isset($_GET['del_id']) && $_GET['type'] == 'category') {
     $id = intval($_GET['del_id']);
     
-    // ตรวจสอบก่อนว่ามีสินค้าตัวไหนใช้ประเภทนี้อยู่ไหม เพื่อป้องกัน Error (Foreign Key)
     $check_usage = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
     
     if ($check_usage->num_rows > 0) {
-        // ถ้ายังมีสินค้าใช้งานประเภทนี้อยู่ ห้ามลบเด็ดขาด
         echo "<script>alert('ไม่สามารถลบได้! เนื่องจากยังมีสินค้าที่ใช้งานประเภทนี้อยู่'); window.location='admin_dashboard.php?tab=categories';</script>";
     } else {
-        // สั่งลบจากฐานข้อมูลจริง
         $conn->query("DELETE FROM categories WHERE id = $id");
         echo "<script>window.location='admin_dashboard.php?tab=categories&deleted=1';</script>";
     }
 }
 
-// --- [Logic 1]: เพิ่มประเภทสินค้าใหม่ (คงเดิม) ---
 if (isset($_POST['save_cat'])) {
     $n = $conn->real_escape_string($_POST['cat_name']);
     $conn->query("INSERT INTO categories (name, slug) VALUES ('$n', '".strtolower($n)."')");
     echo "<script>window.location='admin_dashboard.php?tab=categories&success=1';</script>";
 }
 
-// --- [Logic 2]: อัปเดตข้อมูลประเภทสินค้า (คงเดิม) ---
 if (isset($_POST['update_cat'])) {
     $id = intval($_POST['cat_id']);
     $n = $conn->real_escape_string($_POST['cat_name']);
@@ -37,7 +31,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    /* ปรับปรุง CSS เพื่อแก้ปัญหา Layout เพี้ยน */
     .admin-card-panel {
         background: rgba(255, 255, 255, 0.03) !important;
         backdrop-filter: blur(15px);
@@ -75,7 +68,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
 
-    /* ปรับแต่ง SweetAlert ให้เข้าธีมร้าน (คงเดิม) */
     .swal2-popup {
         background: #1a0028 !important;
         border: 2px solid #bb86fc !important;
@@ -86,7 +78,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
     .swal2-confirm { background: #2582d1 !important; border-radius: 10px !important; padding: 10px 30px !important; font-weight: bold !important; }
     .swal2-cancel { background: #6e7881 !important; border-radius: 10px !important; padding: 10px 30px !important; }
 
-    /* ปรับปรุงปุ่มเพิ่มประเภทให้สวยงามเหมือนหน้าหลัก */
     .btn-neon-pink {
         background: linear-gradient(135deg, #f107a3, #ff0080) !important;
         border: none !important;
@@ -165,7 +156,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 </div>
 
 <script>
-// ฟังก์ชันลบพร้อมป๊อปอัพ SweetAlert2
 function confirmDelete(id, name) {
     Swal.fire({
         title: 'ยืนยันการลบ?',

@@ -8,17 +8,15 @@ $success = "";
 if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     $username = trim($_POST['username']);
-    $fullname = trim($_POST['fullname']); // [เพิ่ม]: รับค่าชื่อ-นามสกุล
+    $fullname = trim($_POST['fullname']); 
     $phone = trim($_POST['phone']);
     $password = $_POST['password'];
     $confirm = $_POST['confirm_password'];
 
-    // ตรวจสอบรหัสผ่านตรงกัน
     if($password !== $confirm){
         $error = "รหัสผ่านไม่ตรงกัน";
     }
 
-    // ตรวจสอบ username หรือ phone ซ้ำ
     else{
         $check = $conn->prepare("SELECT id FROM users WHERE username=? OR phone=?");
         $check->bind_param("ss",$username,$phone);
@@ -31,19 +29,15 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         else{
             $hashed = password_hash($password, PASSWORD_DEFAULT);
 
-            // [ปรับ]: เพิ่ม fullname ในคำสั่ง INSERT และใช้ ssss (4 ตัว)
             $stmt = $conn->prepare("INSERT INTO users(username, fullname, phone, password) VALUES(?,?,?,?)");
             $stmt->bind_param("ssss", $username, $fullname, $phone, $hashed);
 
             if($stmt->execute()){
-                // ดึง id ของ user ที่เพิ่งสมัคร
                 $user_id = $stmt->insert_id;
 
-                // สร้าง session ให้ล็อกอินทันที
                 $_SESSION['user_id'] = $user_id;
                 $_SESSION['username'] = $username;
 
-                // เด้งไปหน้าแรก
                 header("Location: index.php");
                 exit();
 

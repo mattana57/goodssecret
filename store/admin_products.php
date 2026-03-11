@@ -1,6 +1,4 @@
 <?php
-// ห้าม include "admin_dashboard.php" หรือ "connectdb.php" ซ้ำ
-// ใช้ SQL เดิมที่มึงทำไว้ดีอยู่แล้ว
 $sql_p = "SELECT p.*, c.name AS cat_name,
           (SELECT MIN(price) FROM product_variants WHERE product_id = p.id) as min_v_price,
           (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_v_stock
@@ -13,7 +11,6 @@ $result_p = $conn->query($sql_p);
 <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
 
 <style>
-    /* [ปรับเพิ่ม]: สไตล์ SweetAlert ให้เนียนกริบกับธีมม่วงนีออน */
     .swal2-popup {
         background: #1a0028 !important; /* พื้นหลังม่วงเข้มมืด */
         border: 2px solid #f107a3 !important; /* ขอบนีออนชมพู */
@@ -23,7 +20,6 @@ $result_p = $conn->query($sql_p);
     .swal2-title { color: #00f2fe !important; font-weight: 700 !important; } /* หัวข้อนีออนฟ้า */
     .swal2-html-container { color: rgba(255,255,255,0.8) !important; }
     
-    /* สไตล์ปุ่มในป๊อปอัพ */
     .custom-swal-confirm {
         background: linear-gradient(135deg, #f107a3, #ff0080) !important;
         color: #fff !important;
@@ -100,7 +96,7 @@ function confirmDeleteProduct(productId, productName) {
             confirmButton: 'custom-swal-confirm',
             cancelButton: 'custom-swal-cancel'
         },
-        buttonsStyling: false // ปิดสไตล์พื้นฐานเพื่อใช้ class ที่เราสร้างเอง
+        buttonsStyling: false 
     }).then((result) => {
         if (result.isConfirmed) {
             window.location.href = "admin_dashboard.php?del_id=" + productId + "&type=product&tab=products";

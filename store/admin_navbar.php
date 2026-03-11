@@ -1,5 +1,4 @@
 <?php
-// เช็ค session แอดมินตรงนี้ (ถ้ามีระบบแยกสิทธิ์)
 ?>
 <style>
     .admin-nav { background: rgba(26, 0, 40, 0.95); border-bottom: 1px solid #bb86fc; padding: 15px 0; }

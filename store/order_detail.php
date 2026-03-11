@@ -7,22 +7,18 @@ if (!isset($_SESSION['user_id']) || !isset($_GET['id'])) { header("Location: pro
 $order_id = intval($_GET['id']);
 $user_id = $_SESSION['user_id'];
 
-// --- [Logic 1]: กดยืนยันการรับสินค้า ---
 if (isset($_POST['confirm_received'])) {
     $conn->query("UPDATE orders SET status = 'delivered' WHERE id = $order_id AND user_id = $user_id AND status = 'shipped'");
     header("Location: order_detail.php?id=$order_id&success=received"); exit();
 }
 
-// --- [Logic 2]: ลูกค้ายกเลิกออเดอร์เอง ---
 if (isset($_POST['customer_cancel'])) {
     $reason = $conn->real_escape_string($_POST['cancel_reason'] ?? 'ลูกค้ายกเลิกเองผ่านหน้าเว็บ');
-    // [จุดที่แก้]: ระบุชัดเจนว่าเป็นลูกค้ายกเลิก
     $sql_cancel = "UPDATE orders SET status = 'cancelled', cancel_by = 'customer', cancel_reason = '$reason' 
                    WHERE id = $order_id AND user_id = $user_id AND status IN ('pending', 'processing')";
     if($conn->query($sql_cancel)) { header("Location: order_detail.php?id=$order_id&cancelled=1"); exit(); }
 }
 
-// --- [Logic 3]: อัปเดตข้อมูลผู้รับ ---
 if (isset($_POST['update_shipping'])) {
     $sql_upd = "UPDATE orders SET 
                 fullname = '".$conn->real_escape_string($_POST['fullname'])."', 
@@ -34,7 +30,6 @@ if (isset($_POST['update_shipping'])) {
     if($conn->query($sql_upd)) { header("Location: order_detail.php?id=$order_id&success=updated"); exit(); }
 }
 
-// --- [Logic 4]: อัปเดตสลิป ---
 if (isset($_POST['update_slip']) && isset($_FILES['slip_image'])) {
     $file = $_FILES['slip_image'];
     if ($file['error'] === 0) {

@@ -2,7 +2,6 @@
 session_start();
 include "connectdb.php";
 
-// ตรวจสอบการเข้าสู่ระบบ
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
@@ -10,11 +9,9 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// ดึงข้อมูลที่อยู่จากตาราง users มาแสดงอัตโนมัติ
 $user_info_q = $conn->query("SELECT * FROM users WHERE id = $user_id");
 $user_info = $user_info_q->fetch_assoc();
 
-// [จุดแก้ไขสำคัญ]: ปรับ Query ให้ดึงราคา (price) จากตาราง cart ซึ่งเก็บราคาที่ถูกต้องของรุ่นย่อยไว้แล้ว
 $sql = "SELECT cart.*, products.name, pv.variant_name 
         FROM cart 
         JOIN products ON cart.product_id = products.id 
@@ -30,7 +27,6 @@ if ($result->num_rows == 0) {
 $grand_total = 0;
 $items = [];
 while($row = $result->fetch_assoc()) {
-    // ใช้ราคาจากแถวในตะกร้าโดยตรงเพื่อให้ตรงกับรุ่นที่เลือก
     $grand_total += ($row['price'] * $row['quantity']);
     $items[] = $row;
 }
