@@ -1,5 +1,5 @@
 <?php
-// --- [ส่วนที่เพิ่มใหม่]: Logic สำหรับลบข้อมูลในดาต้าเบส (ห้ามตัดออกเด็ดขาด) ---
+// --- [ส่วนที่ 1: Logic สำหรับลบประเภทสินค้า]: ห้ามตัดออกเด็ดขาด ---
 if (isset($_GET['del_id']) && $_GET['type'] == 'category') {
     $id = intval($_GET['del_id']);
     
@@ -16,14 +16,14 @@ if (isset($_GET['del_id']) && $_GET['type'] == 'category') {
     }
 }
 
-// --- [Logic 1]: เพิ่มประเภทสินค้าใหม่ (ของเดิมมึงอยู่ครบ) ---
+// --- [Logic 1]: เพิ่มประเภทสินค้าใหม่ (คงเดิม) ---
 if (isset($_POST['save_cat'])) {
     $n = $conn->real_escape_string($_POST['cat_name']);
     $conn->query("INSERT INTO categories (name, slug) VALUES ('$n', '".strtolower($n)."')");
     echo "<script>window.location='admin_dashboard.php?tab=categories&success=1';</script>";
 }
 
-// --- [Logic 2]: อัปเดตข้อมูลประเภทสินค้า (ของเดิมมึงอยู่ครบ) ---
+// --- [Logic 2]: อัปเดตข้อมูลประเภทสินค้า (คงเดิม) ---
 if (isset($_POST['update_cat'])) {
     $id = intval($_POST['cat_id']);
     $n = $conn->real_escape_string($_POST['cat_name']);
@@ -37,12 +37,22 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    /* บังคับใช้ธีม Dark Neon เดิมของมึงเป๊ะๆ */
+    /* ปรับปรุง CSS เพื่อแก้ปัญหา Layout เพี้ยน */
+    .admin-card-panel {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(187, 134, 252, 0.2) !important;
+        border-radius: 25px;
+        padding: 30px;
+    }
+
     .btn-edit-neon {
         background: transparent !important;
         border: 1px solid #ffc107 !important;
         color: #ffc107 !important;
         box-shadow: 0 0 5px rgba(255, 193, 7, 0.3);
+        border-radius: 12px !important;
+        transition: 0.3s;
     }
     .btn-edit-neon:hover {
         background: #ffc107 !important;
@@ -54,19 +64,13 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
         background: transparent !important;
         border: 1px solid #ff4d4d !important;
         color: #ff4d4d !important;
+        border-radius: 12px !important;
+        transition: 0.3s;
     }
     .btn-delete-neon:hover {
         background: #ff4d4d !important;
         color: #fff !important;
         box-shadow: 0 0 15px #ff4d4d;
-    }
-
-    .glass-panel-custom {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(187, 134, 252, 0.2) !important;
-        border-radius: 25px;
-        padding: 30px;
     }
 
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
@@ -81,15 +85,26 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
     .swal2-title { color: #00f2fe !important; }
     .swal2-confirm { background: #2582d1 !important; border-radius: 10px !important; padding: 10px 30px !important; font-weight: bold !important; }
     .swal2-cancel { background: #6e7881 !important; border-radius: 10px !important; padding: 10px 30px !important; }
+
+    /* ปรับปรุงปุ่มเพิ่มประเภทให้สวยงามเหมือนหน้าหลัก */
+    .btn-neon-pink {
+        background: linear-gradient(135deg, #f107a3, #ff0080) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 25px !important;
+        transition: 0.3s;
+    }
+    .btn-neon-pink:hover { box-shadow: 0 0 15px #f107a3; transform: scale(1.05); }
 </style>
 
-<div class="glass-panel-custom mt-2">
+<div class="admin-card-panel mt-2">
     <div class="d-flex justify-content-between mb-4 align-items-center flex-wrap gap-4">
         <h4 class="mb-0 text-white fw-bold"><i class="bi bi-tags-fill me-2 text-neon-cyan"></i> จัดการประเภทสินค้า</h4>
         
         <form method="POST" class="d-flex gap-2">
-            <input type="text" name="cat_name" class="form-control rounded-pill px-4 bg-dark text-white border-secondary" placeholder="ชื่อประเภทใหม่" required>
-            <button type="submit" name="save_cat" class="btn btn-primary rounded-pill px-4 shadow fw-bold" style="background: #00f2fe !important; border:none; color:#000;">เพิ่ม</button>
+            <input type="text" name="cat_name" class="form-control rounded-pill px-4 bg-dark text-white border-secondary" placeholder="ชื่อประเภทใหม่" style="min-width: 250px;" required>
+            <button type="submit" name="save_cat" class="btn btn-neon-pink px-4 shadow">เพิ่มประเภท</button>
         </form>
     </div>
 
@@ -109,12 +124,12 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
                     <td class="fw-bold fs-5 text-white"><?= htmlspecialchars($c['name']) ?></td>
                     <td class="text-center">
                         <div class="d-flex justify-content-center gap-2">
-                            <button class="btn btn-sm btn-edit-neon rounded-pill px-3 py-1" 
+                            <button class="btn btn-sm btn-edit-neon px-3 py-1" 
                                     onclick="editCategory(<?= $c['id'] ?>, '<?= htmlspecialchars($c['name']) ?>')">
                                 <i class="bi bi-pencil-square"></i> แก้ไข
                             </button>
                             
-                            <button class="btn btn-sm btn-delete-neon rounded-pill px-3 py-1" 
+                            <button class="btn btn-sm btn-delete-neon px-3 py-1" 
                                     onclick="confirmDelete(<?= $c['id'] ?>, '<?= htmlspecialchars($c['name']) ?>')">
                                 <i class="bi bi-trash"></i> ลบ
                             </button>
@@ -143,14 +158,14 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
             </div>
             <div class="modal-footer border-secondary px-4">
                 <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="submit" name="update_cat" class="btn btn-warning rounded-pill px-4 fw-bold text-dark" style="background:#ffc107 !important; border:none;">บันทึก</button>
+                <button type="submit" name="update_cat" class="btn btn-neon-pink rounded-pill px-4 fw-bold">บันทึกข้อมูล</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-// ฟังก์ชันลบพร้อมป๊อปอัพ SweetAlert2 (เชื่อมต่อกับ Logic การลบด้านบน)
+// ฟังก์ชันลบพร้อมป๊อปอัพ SweetAlert2
 function confirmDelete(id, name) {
     Swal.fire({
         title: 'ยืนยันการลบ?',
@@ -167,7 +182,6 @@ function confirmDelete(id, name) {
         buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
-            // ส่งค่า del_id ไปที่ URL เพื่อให้ PHP บรรทัดที่ 3 ทำงาน
             window.location = 'admin_dashboard.php?tab=categories&del_id=' + id + '&type=category';
         }
     })
