@@ -95,7 +95,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
         
         <form method="POST" class="d-flex gap-2">
             <input type="text" name="cat_name" class="form-control rounded-pill px-4 bg-dark text-white border-secondary" placeholder="ชื่อประเภทใหม่" style="min-width: 250px;" required>
-            <button type="submit" name="save_cat" class="btn btn-neon-pink px-4 shadow">เพิ่มประเภท</button>
+            <button type="submit" name="save_cat" class="btn btn-neon-pink px-4 shadow">เพิ่ม</button>
         </form>
     </div>
 
