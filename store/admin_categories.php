@@ -1,29 +1,30 @@
 <?php
-// --- [ส่วนที่เพิ่มใหม่]: Logic สำหรับลบประเภทสินค้า (ห้ามตัดออกเด็ดขาด) ---
+// --- [ส่วนที่เพิ่มใหม่]: Logic สำหรับลบข้อมูลในดาต้าเบส (ห้ามตัดออก) ---
+// ส่วนนี้จะทำงานเมื่อมึงกดปุ่มลบและยืนยันป๊อปอัพ
 if (isset($_GET['del_id']) && $_GET['type'] == 'category') {
     $id = intval($_GET['del_id']);
     
-    // ตรวจสอบก่อนว่ามีสินค้าตัวไหนใช้ประเภทนี้อยู่ไหม เพื่อป้องกันไม่ให้ฐานข้อมูลพัง
+    // ตรวจสอบก่อนว่ามีสินค้าตัวไหนใช้ประเภทนี้อยู่ไหม เพื่อไม่ให้ระบบพัง (Foreign Key Constraint)
     $check_usage = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
     
     if ($check_usage->num_rows > 0) {
-        // ถ้ายังมีสินค้าค้างอยู่ ห้ามลบ
+        // ถ้ายังมีสินค้าใช้งานประเภทนี้อยู่ ห้ามลบเด็ดขาด
         echo "<script>alert('ไม่สามารถลบได้! เนื่องจากยังมีสินค้าที่ใช้งานประเภทนี้อยู่'); window.location='admin_dashboard.php?tab=categories';</script>";
     } else {
-        // ถ้าไม่มีสินค้าแล้ว สั่งลบจริง
+        // ถ้าไม่มีสินค้าค้างอยู่ สั่งลบจากฐานข้อมูลทันที
         $conn->query("DELETE FROM categories WHERE id = $id");
         echo "<script>window.location='admin_dashboard.php?tab=categories&deleted=1';</script>";
     }
 }
 
-// --- [Logic 1]: เพิ่มประเภทสินค้าใหม่ (คงเดิมของมึงทุกบรรทัด) ---
+// --- [Logic 1]: เพิ่มประเภทสินค้าใหม่ (ของเดิมมึงอยู่ครบ) ---
 if (isset($_POST['save_cat'])) {
     $n = $conn->real_escape_string($_POST['cat_name']);
     $conn->query("INSERT INTO categories (name, slug) VALUES ('$n', '".strtolower($n)."')");
     echo "<script>window.location='admin_dashboard.php?tab=categories&success=1';</script>";
 }
 
-// --- [Logic 2]: อัปเดตข้อมูลประเภทสินค้า (คงเดิมของมึงทุกบรรทัด) ---
+// --- [Logic 2]: อัปเดตข้อมูลประเภทสินค้า (ของเดิมมึงอยู่ครบ) ---
 if (isset($_POST['update_cat'])) {
     $id = intval($_POST['cat_id']);
     $n = $conn->real_escape_string($_POST['cat_name']);
@@ -71,7 +72,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
 
-    /* ปรับแต่ง SweetAlert ให้เข้าธีมร้านมึง (คงเดิม) */
+    /* ปรับแต่ง SweetAlert ให้เข้าธีมร้าน (คงเดิม) */
     .swal2-popup {
         background: #1a0028 !important;
         border: 2px solid #bb86fc !important;
@@ -150,11 +151,11 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 </div>
 
 <script>
-// ฟังก์ชันลบพร้อมป๊อปอัพ SweetAlert2 (แก้ไขให้ส่งค่าไปลบได้จริง)
+// ฟังก์ชันลบพร้อมป๊อปอัพ SweetAlert2 (เชื่อมต่อกับ Logic การลบด้านบน)
 function confirmDelete(id, name) {
     Swal.fire({
         title: 'ยืนยันการลบ?',
-        html: `ต้องการลบประเภทสินค้า <b style="color:#00f2fe">[${name}]</b> ใช่หรือไม่?<br><small class="opacity-50">ข้อมูลจะไม่สามารถกู้คืนได้</small>`,
+        html: `ต้องการลบประเภทสินค้า <b style="color:#00f2fe">[${name}]</b> ใช่หรือไม่?<br><small class="opacity-50">ข้อมูลในฐานข้อมูลจะถูกลบทันที</small>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'ใช่, ลบเลย!',
@@ -167,7 +168,7 @@ function confirmDelete(id, name) {
         buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
-            // ส่งค่าไปที่ admin_dashboard.php พร้อมพารามิเตอร์ del_id เพื่อให้ Logic PHP ด้านบนทำงาน
+            // ส่งค่า del_id ไปที่ URL เพื่อให้ PHP บรรทัดที่ 3 ทำงาน
             window.location = 'admin_dashboard.php?tab=categories&del_id=' + id + '&type=category';
         }
     })
