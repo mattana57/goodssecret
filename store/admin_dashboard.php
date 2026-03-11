@@ -17,7 +17,6 @@ if (isset($_GET['del_id']) && isset($_GET['type'])) {
         // แล้วค่อยลบสินค้าหลัก
         $conn->query("DELETE FROM products WHERE id=$id");
     }
-    // [กูเพิ่มส่วนนี้ให้]: สำหรับลบประเภทสินค้าใน Database
     elseif ($type == 'category') {
         // ตรวจสอบก่อนว่ามีสินค้าใช้งานประเภทนี้อยู่ไหม กันระบบพัง
         $check = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
@@ -26,6 +25,15 @@ if (isset($_GET['del_id']) && isset($_GET['type'])) {
             exit();
         }
         $conn->query("DELETE FROM categories WHERE id=$id");
+    }
+    // [กูเพิ่มส่วนนี้ให้]: สำหรับลบข้อมูลลูกค้าใน Database
+    elseif ($type == 'customer') {
+        // ระบบป้องกัน: ห้ามลบแอดมินที่กำลัง Login อยู่ในขณะนั้น
+        if ($id == $_SESSION['user_id']) {
+            echo "<script>alert('ไม่สามารถลบตัวเองได้!'); window.location='admin_dashboard.php?tab=customers';</script>";
+            exit();
+        }
+        $conn->query("DELETE FROM users WHERE id=$id");
     }
     
     header("Location: admin_dashboard.php?tab=".$_GET['tab']."&deleted=1"); 
@@ -135,6 +143,18 @@ if (isset($_GET['ajax_action'])) {
     </div>
 </div>
 
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">ประวัติ: <span id="h_uname" class="text-neon-cyan"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="h_content"></div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
@@ -150,6 +170,8 @@ if (isset($_GET['ajax_action'])) {
         $('#h_content').html('<div class="text-center py-5"><div class="spinner-border text-info"></div></div>');
         $.get('admin_dashboard.php', {ajax_action: 'get_user_history', uid: uid}, function(data) { $('#h_content').html(data); }); 
     }
+
+    function manualUpdateStockDirect(pid, val) { $.get('admin_dashboard.php', {ajax_action: 'update_stock_direct', pid: pid, val: val}); }
 </script>
 </body>
 </html>
