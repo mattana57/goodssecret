@@ -1,6 +1,6 @@
 <?php
-// --- [ส่วนที่เพิ่มใหม่]: Logic สำหรับลบข้อมูลในดาต้าเบส (ห้ามตัดออก) ---
-// ส่วนนี้จะทำงานเมื่อมึงกดปุ่มลบและยืนยันป๊อปอัพ
+// --- [ส่วนที่ 1: เพิ่มใหม่เพื่อให้ลบได้จริง] Logic สำหรับลบข้อมูลในฐานข้อมูล ---
+// ส่วนนี้จะทำงานเมื่อมึงกดยืนยันจากป๊อปอัพ SweetAlert2
 if (isset($_GET['del_id']) && $_GET['type'] == 'category') {
     $id = intval($_GET['del_id']);
     
@@ -8,7 +8,7 @@ if (isset($_GET['del_id']) && $_GET['type'] == 'category') {
     $check_usage = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
     
     if ($check_usage->num_rows > 0) {
-        // ถ้ายังมีสินค้าใช้งานประเภทนี้อยู่ ห้ามลบเด็ดขาด
+        // ถ้ายังมีสินค้าใช้งานประเภทนี้อยู่ ระบบจะแจ้งเตือนและไม่ลบ
         echo "<script>alert('ไม่สามารถลบได้! เนื่องจากยังมีสินค้าที่ใช้งานประเภทนี้อยู่'); window.location='admin_dashboard.php?tab=categories';</script>";
     } else {
         // ถ้าไม่มีสินค้าค้างอยู่ สั่งลบจากฐานข้อมูลทันที
@@ -168,7 +168,7 @@ function confirmDelete(id, name) {
         buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
-            // ส่งค่า del_id ไปที่ URL เพื่อให้ PHP บรรทัดที่ 3 ทำงาน
+            // ส่งค่าไปที่ URL เพื่อให้ Logic PHP ด้านบนสั่งลบในดาต้าเบส
             window.location = 'admin_dashboard.php?tab=categories&del_id=' + id + '&type=category';
         }
     })
