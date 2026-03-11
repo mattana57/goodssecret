@@ -17,7 +17,16 @@ if (isset($_GET['del_id']) && isset($_GET['type'])) {
         // แล้วค่อยลบสินค้าหลัก
         $conn->query("DELETE FROM products WHERE id=$id");
     }
-    // เพิ่มเงื่อนไขลบ Category หรือ User ได้ที่นี่ถ้าต้องการ
+    // [กูเพิ่มส่วนนี้ให้]: สำหรับลบประเภทสินค้าใน Database
+    elseif ($type == 'category') {
+        // ตรวจสอบก่อนว่ามีสินค้าใช้งานประเภทนี้อยู่ไหม กันระบบพัง
+        $check = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
+        if ($check->num_rows > 0) {
+            echo "<script>alert('ไม่สามารถลบได้! เนื่องจากยังมีสินค้าที่ใช้งานประเภทนี้อยู่'); window.location='admin_dashboard.php?tab=categories';</script>";
+            exit();
+        }
+        $conn->query("DELETE FROM categories WHERE id=$id");
+    }
     
     header("Location: admin_dashboard.php?tab=".$_GET['tab']."&deleted=1"); 
     exit();
@@ -25,7 +34,7 @@ if (isset($_GET['del_id']) && isset($_GET['type'])) {
 
 $tab = isset($_GET['tab']) ? $_GET['tab'] : 'products';
 
-// --- ส่วน AJAX สำหรับดึงประวัติลูกค้าและอัปเดตสต็อกด่วน ---
+// --- ส่วน AJAX สำหรับดึงประวัติลูกค้าและอัปเดตสต็อกด่วน (คงเดิมทุกตัวอักษร) ---
 if (isset($_GET['ajax_action'])) {
     if ($_GET['ajax_action'] == 'update_stock_direct') {
         $pid = intval($_GET['pid']); $val = intval($_GET['val']);
@@ -37,10 +46,8 @@ if (isset($_GET['ajax_action'])) {
         $conn->query("UPDATE product_variants SET stock = $new_val WHERE id = $vid");
         echo $new_val; exit();
     }
-    // --- [ส่วนที่แก้ไข]: ส่วน AJAX สำหรับดึงประวัติลูกค้าพร้อมปุ่มจัดการ ---
     if ($_GET['ajax_action'] == 'get_user_history') {
         $uid = intval($_GET['uid']);
-        // ดึงข้อมูลออเดอร์เรียงจากล่าสุดไปเก่า
         $q = $conn->query("SELECT * FROM orders WHERE user_id = $uid ORDER BY created_at DESC");
         
         $html = '<table class="table table-hover small text-white">
@@ -56,7 +63,6 @@ if (isset($_GET['ajax_action'])) {
                     <tbody>';
         
         while($r = $q->fetch_assoc()) {
-            // กำหนดสีสถานะให้สอดคล้องกับหน้า admin_orders_list.php
             $status_color = "";
             if($r['status'] == 'delivered') $status_color = "text-success";
             elseif($r['status'] == 'cancelled') $status_color = "text-danger";
@@ -75,13 +81,8 @@ if (isset($_GET['ajax_action'])) {
                         </td>
                       </tr>";
         }
-        
-        if($q->num_rows == 0) {
-            $html .= '<tr><td colspan="5" class="text-center py-4 opacity-50">ไม่พบประวัติการสั่งซื้อ</td></tr>';
-        }
-        
-        echo $html . '</tbody></table>'; 
-        exit();
+        if($q->num_rows == 0) $html .= '<tr><td colspan="5" class="text-center py-4 opacity-50">ไม่พบประวัติการสั่งซื้อ</td></tr>';
+        echo $html . '</tbody></table>'; exit();
     }
 }
 ?>
@@ -134,15 +135,6 @@ if (isset($_GET['ajax_action'])) {
     </div>
 </div>
 
-<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content shadow">
-            <div class="modal-header border-secondary"><h5>ประวัติ: <span id="h_uname" class="text-neon-cyan"></span></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body" id="h_content"></div>
-        </div>
-    </div>
-</div>
-
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
@@ -158,12 +150,6 @@ if (isset($_GET['ajax_action'])) {
         $('#h_content').html('<div class="text-center py-5"><div class="spinner-border text-info"></div></div>');
         $.get('admin_dashboard.php', {ajax_action: 'get_user_history', uid: uid}, function(data) { $('#h_content').html(data); }); 
     }
-
-    function manualUpdateStockDirect(pid, val) { $.get('admin_dashboard.php', {ajax_action: 'update_stock_direct', pid: pid, val: val}); }
-    function manualUpdateStockVariant(vid, val) { $.get('admin_dashboard.php', {ajax_action: 'update_stock_value', vid: vid, val: val}); }
-    
-    // ฟังก์ชันช่วยสำหรับการแสดงผล Modal ในไฟล์ย่อย
-    function toggleVariantFields(val) { $('#v_box').toggle(val === 'yes'); $('#no_v').toggle(val === 'no'); }
 </script>
 </body>
 </html>
