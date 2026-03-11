@@ -1,28 +1,29 @@
 <?php
-// --- [ส่วนที่ 1: เพิ่มใหม่ - Logic สำหรับลบประเภทสินค้า] ---
-// ส่วนนี้กูเพิ่มให้เพื่อให้ปุ่มลบทำงานได้จริง โดยส่งค่าผ่าน URL
+// --- [ส่วนที่เพิ่มใหม่]: Logic สำหรับลบประเภทสินค้า (ห้ามตัดออกเด็ดขาด) ---
 if (isset($_GET['del_id']) && $_GET['type'] == 'category') {
     $id = intval($_GET['del_id']);
     
-    // เช็คก่อนว่าประเภทนี้มีสินค้าใช้อยู่ไหม ถ้ามีห้ามลบเด็ดขาดกันระบบพัง
-    $check_res = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
+    // ตรวจสอบก่อนว่ามีสินค้าตัวไหนใช้ประเภทนี้อยู่ไหม เพื่อป้องกันไม่ให้ฐานข้อมูลพัง
+    $check_usage = $conn->query("SELECT id FROM products WHERE category_id = $id LIMIT 1");
     
-    if ($check_res->num_rows > 0) {
+    if ($check_usage->num_rows > 0) {
+        // ถ้ายังมีสินค้าค้างอยู่ ห้ามลบ
         echo "<script>alert('ไม่สามารถลบได้! เนื่องจากยังมีสินค้าที่ใช้งานประเภทนี้อยู่'); window.location='admin_dashboard.php?tab=categories';</script>";
     } else {
+        // ถ้าไม่มีสินค้าแล้ว สั่งลบจริง
         $conn->query("DELETE FROM categories WHERE id = $id");
         echo "<script>window.location='admin_dashboard.php?tab=categories&deleted=1';</script>";
     }
 }
 
-// --- [Logic 1]: เพิ่มประเภทสินค้าใหม่ (ของเดิมมึงอยู่ครบ) ---
+// --- [Logic 1]: เพิ่มประเภทสินค้าใหม่ (คงเดิมของมึงทุกบรรทัด) ---
 if (isset($_POST['save_cat'])) {
     $n = $conn->real_escape_string($_POST['cat_name']);
     $conn->query("INSERT INTO categories (name, slug) VALUES ('$n', '".strtolower($n)."')");
     echo "<script>window.location='admin_dashboard.php?tab=categories&success=1';</script>";
 }
 
-// --- [Logic 2]: อัปเดตข้อมูลประเภทสินค้า (ของเดิมมึงอยู่ครบ) ---
+// --- [Logic 2]: อัปเดตข้อมูลประเภทสินค้า (คงเดิมของมึงทุกบรรทัด) ---
 if (isset($_POST['update_cat'])) {
     $id = intval($_POST['cat_id']);
     $n = $conn->real_escape_string($_POST['cat_name']);
@@ -36,7 +37,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    /* CSS เดิมของมึงทุุกบรรทัด ห้ามตัดออก */
+    /* บังคับใช้ธีม Dark Neon เดิมของมึงเป๊ะๆ */
     .btn-edit-neon {
         background: transparent !important;
         border: 1px solid #ffc107 !important;
@@ -70,10 +71,10 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 
     .text-neon-cyan { color: #00f2fe !important; text-shadow: 0 0 10px #00f2fe; }
 
-    /* สไตล์ป๊อปอัพ SweetAlert2 (คงเดิม) */
+    /* ปรับแต่ง SweetAlert ให้เข้าธีมร้านมึง (คงเดิม) */
     .swal2-popup {
         background: #1a0028 !important;
-        border: 1px solid #bb86fc !important;
+        border: 2px solid #bb86fc !important;
         border-radius: 25px !important;
         color: #fff !important;
     }
@@ -149,19 +150,24 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id DESC");
 </div>
 
 <script>
-// ฟังก์ชันลบพร้อมป๊อปอัพ SweetAlert2 (แก้ไขให้ส่งค่ากลับหน้าแม่ admin_dashboard.php)
+// ฟังก์ชันลบพร้อมป๊อปอัพ SweetAlert2 (แก้ไขให้ส่งค่าไปลบได้จริง)
 function confirmDelete(id, name) {
     Swal.fire({
         title: 'ยืนยันการลบ?',
-        html: `คุณต้องการลบประเภทสินค้า <b style="color:#00f2fe">[${name}]</b> ใช่หรือไม่?<br><small class="opacity-50">ข้อมูลจะไม่สามารถกู้คืนได้</small>`,
+        html: `ต้องการลบประเภทสินค้า <b style="color:#00f2fe">[${name}]</b> ใช่หรือไม่?<br><small class="opacity-50">ข้อมูลจะไม่สามารถกู้คืนได้</small>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'ใช่, ลบเลย!',
         cancelButtonText: 'ยกเลิก',
-        reverseButtons: true
+        reverseButtons: true,
+        customClass: {
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel'
+        },
+        buttonsStyling: false
     }).then((result) => {
         if (result.isConfirmed) {
-            // ส่งค่า del_id และ type ไปที่หน้าแม่ เพื่อให้ Logic PHP ลบข้อมูลทำงาน
+            // ส่งค่าไปที่ admin_dashboard.php พร้อมพารามิเตอร์ del_id เพื่อให้ Logic PHP ด้านบนทำงาน
             window.location = 'admin_dashboard.php?tab=categories&del_id=' + id + '&type=category';
         }
     })
